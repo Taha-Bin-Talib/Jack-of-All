@@ -1,0 +1,19 @@
+{
+  "name": "jack-of-all-server",
+  "version": "1.0.0",
+  "description": "Realtime game server for Jack of All (Thulla, Bluff, Jack Thief)",
+  "main": "src/index.js",
+  "private": true,
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "node test/run-all.js",
+    "test:rules": "node test/run-all.js rules",
+    "test:sim": "node test/run-all.js sim"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
