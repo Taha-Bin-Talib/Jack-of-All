@@ -1,8 +1,8 @@
 {
   "cli": { "version": ">= 12.0.0" },
   "build": {
-    "preview": { "distribution": "internal", "android": { "buildType": "apk" }, "env": { "EXPO_PUBLIC_SERVER_URL": "wss://YOUR-SERVER.onrender.com" } },
-    "production": { "android": { "buildType": "app-bundle" }, "env": { "EXPO_PUBLIC_SERVER_URL": "wss://YOUR-SERVER.onrender.com" } }
+    "preview": { "distribution": "internal", "android": { "buildType": "apk" }, "env": { "EXPO_PUBLIC_SERVER_URL": "wss://jack-of-all-server.onrender.com" } },
+    "production": { "android": { "buildType": "app-bundle" }, "env": { "EXPO_PUBLIC_SERVER_URL": "wss://jack-of-all-server.onrender.com" } }
   },
   "submit": { "production": {} }
 }
