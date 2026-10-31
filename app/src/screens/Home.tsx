@@ -1,7 +1,7 @@
 import React from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, View, StyleSheet } from 'react-native';
 import { C } from '../theme';
-import { Btn } from '../ui';
+import { Btn, Suit } from '../ui';
 import { getSnap, saveName, savedName, send, setServer, useNet } from '../net';
 import { RULES } from '../rules';
 
@@ -39,7 +39,7 @@ export default function Home() {
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={{ padding: 20 }} keyboardShouldPersistTaps="handled">
-        <Text style={s.logo}>♠ Jack of All ♥</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 20 }}><Suit s="S" size={30} color="#16181d" /><Text style={[s.logo, { marginTop: 0 }]}>Jack of All</Text><Suit s="H" size={30} color="#c0262d" /></View>
         <Text style={s.tag}>Play cards with friends online</Text>
         <TextInput value={name} onChangeText={setName} placeholder="Your name" placeholderTextColor={C.dim} maxLength={14} style={s.input} />
 
