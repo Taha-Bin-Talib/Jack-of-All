@@ -1,19 +1,20 @@
 'use strict';
-// JACK THIEF (Old-Maid style) — 2–10 players. One random Jack is removed, the other 51 cards are dealt and
-// pairs (same rank) are thrown away. Then you draw one hidden card from the next player; a match is
-// discarded. Whoever is left holding the unpaired Jack is the Jack Thief.
+// JACK THIEF (Old-Maid style) — 2–10 players. One random Jack is removed and all 51 cards are dealt.
+// SORT phase: every player throws away their own pairs (same rank) face-up, so everyone can see what is out,
+// then taps Done. Then players take turns drawing one hidden card from the next player; a match is thrown away.
+// Whoever is left holding the unpaired Jack is the Jack Thief.
 const crypto = require('crypto');
 const { later, setEvent, num } = require('../net');
 const { rank, newDeck, shuffle, label } = require('../cards');
 
 const cfg = {
+  SORT_MS: num(process.env.SORT_MS, 90000),
   TURN_MS: num(process.env.TURN_MS, 60000),
   SETTLE_MS: num(process.env.SETTLE_MS, 1600),
   BOT_MS: Math.max(1, num(process.env.BOT_MS, 3000)),
 };
 const byId = (room, id) => room.players.find(p => p.id === id);
 
-/* next player after `p` (in direction) who still holds cards */
 function nextHolder(room, p) {
   const n = room.players.length, dir = room.settings.direction === 'ccw' ? -1 : 1;
   const s = room.players.indexOf(p);
@@ -24,37 +25,70 @@ function nextHolder(room, p) {
   return null;
 }
 
-/* remove pairs: keep one card of a rank if the count is odd */
+const hasPair = hand => { const seen = new Set(); return hand.some(c => seen.has(rank(c)) || !seen.add(rank(c))); };
+
+/* helper for bots / timeouts: throw every pair a hand still holds */
 function dropPairs(hand) {
   const by = {};
   for (const c of hand) (by[rank(c)] = by[rank(c)] || []).push(c);
   const keep = [], dropped = [];
-  for (const r in by) {
-    const cs = by[r];
-    if (cs.length % 2) keep.push(cs.pop());
-    dropped.push(...cs);
-  }
+  for (const r in by) { const cs = by[r]; if (cs.length % 2) keep.push(cs.pop()); dropped.push(...cs); }
   return { keep, dropped };
 }
 
 function start(room) {
   clearTimeout(room.timer); room.timer = null; room.gen++;
   room.phase = 'playing';
-  room.g = { stage: 'turn', turn: null, seq: 0, event: null, discarded: 0, pick: null, turnUntil: 0, thiefId: null, last: null, fx: 0 };
+  room.g = { stage: 'sort', turn: null, seq: 0, event: null, thrown: [], pick: null, turnUntil: 0, sortUntil: 0, thiefId: null, last: null, fx: 0, ready: [] };
   const g = room.g;
   const deck = newDeck();
   const jacks = deck.filter(c => rank(c) === 11);
   deck.splice(deck.indexOf(jacks[crypto.randomInt(jacks.length)]), 1);   // one random Jack removed
   room.players.forEach(p => { p.hand = []; p.out = false; p.place = 0; });
-  deck.forEach((c, i) => room.players[i % room.players.length].hand.push(c));
-  for (const p of room.players) {
-    const { keep, dropped } = dropPairs(p.hand);
-    p.hand = shuffle(keep); g.discarded += dropped.length;
-  }
+  deck.forEach((c, i) => room.players[i % room.players.length].hand.push(c));   // ALL cards dealt, nothing thrown yet
+  room.players.forEach(p => { p.hand = shuffle(p.hand); });
+  g.sortUntil = Date.now() + cfg.SORT_MS;
+  setEvent(room, 'start', 'Cards dealt — throw away your pairs, then tap Done');
+  for (const p of room.players) if (!p.connected) autoSort(room, p);
+  if (room.players.every(q => g.ready.includes(q.id))) return beginPlay(room);
+  later(room, cfg.SORT_MS, () => { room.players.forEach(p => autoSort(room, p)); beginPlay(room); });
+}
+
+function autoSort(room, p) {
+  const g = room.g;
+  if (g.ready.includes(p.id)) return;
+  const { keep, dropped } = dropPairs(p.hand);
+  p.hand = shuffle(keep); g.thrown.push(...dropped);
+  g.ready.push(p.id);
+}
+
+function throwPair(room, p, a, b) {
+  const g = room.g;
+  if (g.stage !== 'sort') return 'Pairs are only thrown at the start.';
+  if (g.ready.includes(p.id)) return 'You already tapped Done.';
+  if (typeof a !== 'string' || typeof b !== 'string' || a === b || !p.hand.includes(a) || !p.hand.includes(b)) return 'Pick two cards from your hand.';
+  if (rank(a) !== rank(b)) return 'Those two cards are not a pair.';
+  p.hand.splice(p.hand.indexOf(a), 1); p.hand.splice(p.hand.indexOf(b), 1);
+  g.thrown.push(a, b);
+  return null;
+}
+
+function done(room, p) {
+  const g = room.g;
+  if (g.stage !== 'sort') return null;
+  if (hasPair(p.hand)) return 'You still hold a pair — throw it away first.';
+  if (!g.ready.includes(p.id)) g.ready.push(p.id);
+  if (room.players.every(q => g.ready.includes(q.id))) beginPlay(room);
+  return null;
+}
+
+function beginPlay(room) {
+  const g = room.g;
+  clearTimeout(room.timer); room.timer = null;
   const holders = room.players.filter(p => p.hand.length);
   if (holders.length <= 1) return finish(room);
   const first = holders[crypto.randomInt(holders.length)];
-  setEvent(room, 'start', `Pairs thrown away. ${first.name} draws first`);
+  setEvent(room, 'start', `Everyone is ready. ${first.name} draws first`);
   setTurn(room, first);
 }
 
@@ -75,7 +109,7 @@ function draw(room, p, i) {
   const matched = p.hand.find(c => rank(c) === rank(card));
   let text;
   if (matched) {
-    p.hand.splice(p.hand.indexOf(matched), 1); g.discarded += 2;
+    p.hand.splice(p.hand.indexOf(matched), 1); g.thrown.push(matched, card);
     text = `${p.name} drew ${label(card)} from ${victim.name} — pair!`;
   } else {
     p.hand.push(card);
@@ -88,7 +122,7 @@ function draw(room, p, i) {
   const holders = room.players.filter(q => q.hand.length);
   if (holders.length <= 1) return later(room, cfg.SETTLE_MS, () => finish(room));
   later(room, cfg.SETTLE_MS, () => {
-    // the victim plays next (or, if emptied, the next holder after them in turn order)
+    // the victim plays next (or, if they just ran out, the next holder in turn order)
     const nxt = victim.hand.length ? victim : (p.hand.length ? nextHolder(room, victim) || p : nextHolder(room, p));
     const who = nxt && nxt.hand.length ? nxt : room.players.find(q => q.hand.length);
     setTurn(room, who);
@@ -123,11 +157,15 @@ function scheduleBot(room) {
 
 function action(room, p, m) {
   const g = room.g;
-  if (m.a === 'draw') {
-    if (g.stage !== 'turn' || g.turn !== p.id || !g.pick) return 'It is not your turn.';
-    if (!Number.isInteger(m.i) || m.i < 0 || m.i >= g.pick.perm.length) return 'Pick one of the cards.';
-    draw(room, p, m.i);
-    return null;
+  switch (m.a) {
+    case 'throw': return throwPair(room, p, m.cards && m.cards[0], m.cards && m.cards[1]);
+    case 'done': return done(room, p);
+    case 'draw': {
+      if (g.stage !== 'turn' || g.turn !== p.id || !g.pick) return 'It is not your turn.';
+      if (!Number.isInteger(m.i) || m.i < 0 || m.i >= g.pick.perm.length) return 'Pick one of the cards.';
+      draw(room, p, m.i);
+      return null;
+    }
   }
   return 'Unknown action.';
 }
@@ -141,15 +179,24 @@ function view(room, p) {
     pick: playing && g.pick ? { pid: g.pick.pid, fromId: g.pick.fromId, n: g.pick.n } : null,
     last: g.last ? { id: g.last.id, pid: g.last.pid, fromId: g.last.fromId, matched: g.last.matched,
       card: g.last.pid === p.id || g.last.matched || over ? g.last.card : null } : null,
-    discarded: g.discarded, thiefId: g.thiefId, event: g.event,
+    thrown: g.thrown, ready: g.ready, sortMs: g.stage === 'sort' ? Math.max(0, g.sortUntil - Date.now()) : 0,
+    thiefId: g.thiefId, event: g.event,
     timer: playing && g.stage === 'turn' && g.turn ? { pid: g.turn, ms: Math.max(0, g.turnUntil - Date.now()) } : null,
     direction: room.settings.direction,
-    seats: room.players.map(q => ({ id: q.id, count: q.hand.length })),
-    you: { hand: p.hand, mustDraw: playing && g.stage === 'turn' && g.turn === p.id },
+    seats: room.players.map(q => ({ id: q.id, count: q.hand.length, ready: g.ready.includes(q.id) })),
+    you: { hand: p.hand, mustDraw: playing && g.stage === 'turn' && g.turn === p.id, done: g.ready.includes(p.id), pairs: hasPair(p.hand) },
   };
 }
 
-function onPresence(room) { if (room.phase === 'playing') scheduleBot(room); }
+function onPresence(room, p) {
+  if (room.phase !== 'playing') return;
+  const g = room.g;
+  if (g.stage === 'sort') {
+    if (p && !p.connected) { autoSort(room, p); if (room.players.every(q => g.ready.includes(q.id))) beginPlay(room); }
+    return;
+  }
+  scheduleBot(room);
+}
 function reset(room) { clearTimeout(room.timer); room.timer = null; room.gen++; room.g = null; room.players.forEach(p => { p.hand = []; }); }
 
 module.exports = {

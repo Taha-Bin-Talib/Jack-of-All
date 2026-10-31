@@ -1,29 +1,30 @@
 'use strict';
-// BLUFF (Cheat) — 3–10 players. All cards are dealt out; the holder of A♠ starts.
-// The rank to claim goes A,2,3,…,K,A,… . On your turn put 1–4 cards face-down and say they are all of that rank
-// (you may lie). Everyone else may CALL (challenge) within a short window. Caught lying -> you pick up the whole
-// pile; wrongly accused -> the caller picks it up. First player to empty their hand without being caught wins.
+// BLUFF — 3–10 players. All cards are dealt; the holder of A♠ opens.
+// A round: the opener puts 1–4 cards face-down and names a rank ("2 Aces"). Then, one player at a time, the next
+// player may CALL BLUFF on the last play, ADD 1 or 2 more face-down cards to the pile (the claim grows, same rank),
+// or PASS. If everybody passes in a row the pile is thrown away and the last player to add opens a new round.
+// A called play is revealed: if it was a lie the player who played it picks up the pile, otherwise the caller does.
+// The one who picks up the pile opens the next round. First to empty their hand without being caught wins.
 const crypto = require('crypto');
 const { later, setEvent, num } = require('../net');
-const { rank, sortHand, newDeck, rankName, rankWord, label } = require('../cards');
+const { rank, sortHand, newDeck, rankName, rankWord } = require('../cards');
 
 const cfg = {
   TURN_MS: num(process.env.TURN_MS, 60000),
-  CHALLENGE_MS: num(process.env.CHALLENGE_MS, 8000),
   REVEAL_MS: num(process.env.REVEAL_MS, 3500),
   BOT_MS: Math.max(1, num(process.env.BOT_MS, 4000)),
-  MAX_PLAY: 4,
+  MAX_OPEN: 4, MAX_ADD: 2,
 };
-const SEQ = [14, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
 const byId = (room, id) => room.players.find(p => p.id === id);
 
-function nextWithCards(room, p) {
+/* next player clockwise after `p` who still has cards (and isn't `skip`) */
+function nextAfter(room, p, skip) {
   const n = room.players.length, s = room.players.indexOf(p);
   for (let i = 1; i <= n; i++) {
     const q = room.players[(s + i) % n];
-    if (q.hand.length) return q;
+    if (q.hand.length && q !== skip) return q;
   }
-  return p;
+  return null;
 }
 
 function decksFor(room) {
@@ -37,73 +38,94 @@ function start(room) {
   clearTimeout(room.timer); room.timer = null; room.gen++;
   room.phase = 'playing';
   const copies = decksFor(room);
-  room.g = { stage: 'turn', turn: null, seq: 0, event: null, rankIdx: 0, pile: [], last: null, passed: [], challengeUntil: 0,
-    reveal: null, winnerId: null, turnUntil: 0, decks: copies, plays: 0 };
+  room.g = { stage: 'open', turn: null, seq: 0, event: null, pile: [], claim: null, last: null, passes: 0, reveal: null,
+    winnerId: null, turnUntil: 0, decks: copies, fx: 0, gone: 0 };
   room.players.forEach(p => { p.hand = []; p.out = false; p.place = 0; });
   newDeck(copies).forEach((c, i) => room.players[i % room.players.length].hand.push(c));
   room.players.forEach(p => sortHand(p.hand));
   const starter = room.players.find(p => p.hand.includes('14S')) || room.players[0];
-  setEvent(room, 'start', `${starter.name} starts — claim ${rankName(SEQ[0])}s`);
-  setTurn(room, starter.id);
+  setEvent(room, 'start', `${starter.name} opens — choose a rank`);
+  setOpen(room, starter);
 }
 
-const needRank = room => SEQ[room.g.rankIdx % SEQ.length];
-
-function setTurn(room, pid) {
+function setOpen(room, p) {
   const g = room.g;
-  g.stage = 'turn'; g.turn = pid; g.reveal = null; g.passed = [];
+  g.stage = 'open'; g.turn = p.id; g.claim = null; g.pile = []; g.passes = 0; g.reveal = null;
   g.turnUntil = Date.now() + cfg.TURN_MS;
   scheduleTurn(room);
 }
 
-function play(room, p, cards) {
+function giveTurnToResponder(room, from, adder) {
   const g = room.g;
-  const r = needRank(room);
+  const nxt = nextAfter(room, from, adder);
+  if (!nxt) return roundEnd(room);
+  g.stage = 'respond'; g.turn = nxt.id;
+  g.turnUntil = Date.now() + cfg.TURN_MS;
+  scheduleTurn(room);
+}
+
+function putCards(room, p, cards, text) {
+  const g = room.g;
   for (const c of cards) p.hand.splice(p.hand.indexOf(c), 1);
   g.pile.push(...cards);
-  g.last = { pid: p.id, cards: cards.slice(), n: cards.length, rank: r };
-  g.rankIdx++;
-  g.plays++;
-  g.turn = null;
-  g.stage = 'challenge';
-  // players who are offline can't answer: they pass for themselves
-  g.passed = room.players.filter(q => q.id !== p.id && !q.connected).map(q => q.id);
-  g.challengeUntil = Date.now() + cfg.CHALLENGE_MS;
-  setEvent(room, 'claim', `${p.name} plays ${rankWord(r, cards.length)}`);
-  if (allPassed(room)) return afterNoCall(room);
-  later(room, cfg.CHALLENGE_MS, () => afterNoCall(room));
+  g.last = { id: ++g.fx, pid: p.id, cards: cards.slice(), n: cards.length };
+  g.passes = 0;
+  setEvent(room, 'claim', text);
 }
 
-function allPassed(room) {
+function open(room, p, r, cards) {
   const g = room.g;
-  return room.players.every(q => q.id === g.last.pid || g.passed.includes(q.id));
+  putCards(room, p, cards, `${p.name}: ${rankWord(r, cards.length)}`);
+  g.claim = { rank: r, count: cards.length, by: p.id };
+  giveTurnToResponder(room, p, p);
 }
 
-function afterNoCall(room) {
+function add(room, p, cards) {
   const g = room.g;
-  if (g.stage !== 'challenge') return;
+  g.claim.count += cards.length;
+  g.claim.by = p.id;
+  putCards(room, p, cards, `${p.name} adds ${cards.length} — now ${rankWord(g.claim.rank, g.claim.count)}`);
+  giveTurnToResponder(room, p, p);
+}
+
+function pass(room, p) {
+  const g = room.g;
+  g.passes++;
+  setEvent(room, 'info', `${p.name} passes`);
+  const adder = byId(room, g.last.pid);
+  const others = room.players.filter(q => q !== adder && q.hand.length).length;
+  if (g.passes >= others) return roundEnd(room);
+  giveTurnToResponder(room, p, adder);
+}
+
+/* everybody passed: the pile is thrown away, the last player to add opens a new round (or wins) */
+function roundEnd(room) {
+  const g = room.g;
   clearTimeout(room.timer); room.timer = null;
-  const p = byId(room, g.last.pid);
-  if (p.hand.length === 0) return endGame(room, p);
-  setTurn(room, nextWithCards(room, p).id);
+  const adder = byId(room, g.last.pid);
+  g.gone += g.pile.length; g.pile = [];
+  if (adder.hand.length === 0) return endGame(room, adder);
+  setEvent(room, 'info', `Everyone passed — pile thrown away. ${adder.name} opens`);
+  setOpen(room, adder);
 }
 
 function call(room, caller) {
   const g = room.g, L = g.last;
-  const p = byId(room, L.pid);
+  const adder = byId(room, L.pid);
   clearTimeout(room.timer); room.timer = null;
-  const truthful = L.cards.every(c => rank(c) === L.rank);
-  const loser = truthful ? caller : p;
+  const truthful = L.cards.every(c => rank(c) === g.claim.rank);
+  const loser = truthful ? caller : adder;
+  const taken = g.pile.length;
   g.stage = 'reveal'; g.turn = null;
-  g.reveal = { callerId: caller.id, playerId: p.id, cards: L.cards.slice(), truthful, loserId: loser.id, rank: L.rank, taken: g.pile.length };
+  g.reveal = { callerId: caller.id, playerId: adder.id, cards: L.cards.slice(), truthful, loserId: loser.id, rank: g.claim.rank, taken };
   setEvent(room, 'call', truthful
-    ? `${caller.name} called — ${p.name} told the truth! ${caller.name} takes ${g.pile.length} cards`
-    : `${caller.name} called — ${p.name} was bluffing! ${p.name} takes ${g.pile.length} cards`);
+    ? `${caller.name} called — ${adder.name} told the truth! ${caller.name} takes ${taken} cards`
+    : `${caller.name} called — ${adder.name} was bluffing! ${adder.name} takes ${taken} cards`);
   later(room, cfg.REVEAL_MS, () => {
     loser.hand.push(...g.pile); sortHand(loser.hand);
     g.pile = []; g.reveal = null;
-    if (p.hand.length === 0) return endGame(room, p);   // told the truth with their last cards
-    setTurn(room, nextWithCards(room, p).id);
+    if (adder.hand.length === 0) return endGame(room, adder);   // told the truth with their last cards
+    setOpen(room, loser);
   });
 }
 
@@ -114,49 +136,72 @@ function endGame(room, winner) {
   setEvent(room, 'over', `${winner.name} wins!`);
 }
 
+function bestRank(hand) {
+  const by = {};
+  for (const c of hand) (by[rank(c)] = by[rank(c)] || []).push(c);
+  const max = Math.max(...Object.values(by).map(a => a.length));
+  const best = Object.keys(by).filter(r => by[r].length === max);
+  const r = +best[crypto.randomInt(best.length)];
+  return { r, cards: by[r].slice(0, cfg.MAX_OPEN) };
+}
+
 function scheduleTurn(room) {
   const g = room.g;
-  if (room.phase !== 'playing' || g.stage !== 'turn') return;
+  if (room.phase !== 'playing' || (g.stage !== 'open' && g.stage !== 'respond')) return;
   clearTimeout(room.timer); room.timer = null;
   const p = byId(room, g.turn);
   if (!p) return;
-  const turn = g.turn, gen = room.gen;
+  const turn = g.turn, stage = g.stage, gen = room.gen;
   const remaining = Math.max(0, g.turnUntil - Date.now());
   const wait = p.connected ? remaining : Math.min(remaining, cfg.BOT_MS);
   later(room, Math.max(1, wait), () => {
-    if (room.gen !== gen || g.stage !== 'turn' || g.turn !== turn) return;
+    if (room.gen !== gen || g.stage !== stage || g.turn !== turn) return;
     if (p.connected && Date.now() < g.turnUntil - 5) return scheduleTurn(room);
-    const r = needRank(room);
-    const match = p.hand.filter(c => rank(c) === r).slice(0, cfg.MAX_PLAY);
-    const cards = match.length ? match : [p.hand[crypto.randomInt(p.hand.length)]];
-    if (p.connected) setEvent(room, 'info', `${p.name} ran out of time — cards played for them`);
-    play(room, p, cards);
+    if (stage === 'open') {
+      const { r, cards } = bestRank(p.hand);
+      if (p.connected) setEvent(room, 'info', `${p.name} ran out of time — cards played for them`);
+      return open(room, p, r, cards);
+    }
+    if (p.connected) setEvent(room, 'info', `${p.name} ran out of time — passed`);
+    pass(room, p);
   });
+}
+
+function validCards(p, cards, max) {
+  return Array.isArray(cards) && cards.length >= 1 && cards.length <= max &&
+    new Set(cards).size === cards.length && cards.every(c => typeof c === 'string' && p.hand.includes(c));
 }
 
 function action(room, p, m) {
   const g = room.g;
   switch (m.a) {
-    case 'play': {
-      if (g.stage !== 'turn' || g.turn !== p.id) return 'It is not your turn.';
-      const cards = Array.isArray(m.cards) ? m.cards.map(String) : [];
-      if (cards.length < 1 || cards.length > cfg.MAX_PLAY) return `Play between 1 and ${cfg.MAX_PLAY} cards.`;
-      if (new Set(cards).size !== cards.length || !cards.every(c => p.hand.includes(c))) return 'Those cards are not in your hand.';
+    case 'open': {
+      if (g.stage !== 'open' || g.turn !== p.id) return 'It is not your turn.';
+      const r = Number(m.rank), cards = Array.isArray(m.cards) ? m.cards.map(String) : [];
+      if (!Number.isInteger(r) || r < 2 || r > 14) return 'Choose a rank to call.';
+      if (!validCards(p, cards, cfg.MAX_OPEN)) return `Play between 1 and ${cfg.MAX_OPEN} cards from your hand.`;
       clearTimeout(room.timer); room.timer = null;
-      play(room, p, cards);
+      open(room, p, r, cards);
+      return null;
+    }
+    case 'add': {
+      if (g.stage !== 'respond' || g.turn !== p.id) return 'It is not your turn.';
+      const cards = Array.isArray(m.cards) ? m.cards.map(String) : [];
+      if (!validCards(p, cards, cfg.MAX_ADD)) return `Add 1 or ${cfg.MAX_ADD} cards from your hand.`;
+      clearTimeout(room.timer); room.timer = null;
+      add(room, p, cards);
       return null;
     }
     case 'call': {
-      if (g.stage !== 'challenge') return 'Too late to call.';
-      if (g.last.pid === p.id) return 'You can’t call your own play.';
-      if (g.passed.includes(p.id)) return 'You already passed.';
+      if (g.stage !== 'respond' || g.turn !== p.id) return 'It is not your turn.';
+      if (!g.pile.length) return 'Nothing to call.';
       call(room, p);
       return null;
     }
     case 'pass': {
-      if (g.stage !== 'challenge' || g.last.pid === p.id || g.passed.includes(p.id)) return null;
-      g.passed.push(p.id);
-      if (allPassed(room)) afterNoCall(room);
+      if (g.stage !== 'respond' || g.turn !== p.id) return 'It is not your turn.';
+      clearTimeout(room.timer); room.timer = null;
+      pass(room, p);
       return null;
     }
   }
@@ -166,31 +211,21 @@ function action(room, p, m) {
 function view(room, p) {
   const g = room.g;
   const playing = room.phase === 'playing';
-  const ch = playing && g.stage === 'challenge';
+  const myTurn = playing && g.turn === p.id;
   return {
-    phase: room.phase, stage: g.stage, turn: playing && g.stage === 'turn' ? g.turn : null,
-    need: needRank(room), needName: rankName(needRank(room)),
+    phase: room.phase, stage: g.stage, turn: playing && (g.stage === 'open' || g.stage === 'respond') ? g.turn : null,
+    claim: g.claim ? { rank: g.claim.rank, name: rankName(g.claim.rank), count: g.claim.count, by: g.claim.by } : null,
     pile: g.pile.length, decks: g.decks,
-    last: g.last ? { pid: g.last.pid, n: g.last.n, rank: g.last.rank } : null,
-    challenge: ch ? { ms: Math.max(0, g.challengeUntil - Date.now()), decided: g.passed.includes(p.id) || g.last.pid === p.id, by: g.last.pid } : null,
+    last: g.last ? { id: g.last.id, pid: g.last.pid, n: g.last.n } : null,
     reveal: g.reveal,
-    timer: playing && g.stage === 'turn' && g.turn ? { pid: g.turn, ms: Math.max(0, g.turnUntil - Date.now()) } : null,
+    timer: playing && g.turn && (g.stage === 'open' || g.stage === 'respond') ? { pid: g.turn, ms: Math.max(0, g.turnUntil - Date.now()) } : null,
     winnerId: g.winnerId, event: g.event,
     seats: room.players.map(q => ({ id: q.id, count: q.hand.length })),
-    you: { hand: p.hand },
+    you: { hand: p.hand, canCall: myTurn && g.stage === 'respond' && g.pile.length > 0, maxAdd: Math.min(cfg.MAX_ADD, p.hand.length), maxOpen: Math.min(cfg.MAX_OPEN, p.hand.length) },
   };
 }
 
-function onPresence(room, p) {
-  if (room.phase !== 'playing') return;
-  const g = room.g;
-  if (g.stage === 'turn') return scheduleTurn(room);
-  if (g.stage === 'challenge' && !p.connected && g.last.pid !== p.id && !g.passed.includes(p.id)) {
-    g.passed.push(p.id);
-    if (allPassed(room)) afterNoCall(room);
-  }
-}
-
+function onPresence(room) { if (room.phase === 'playing') scheduleTurn(room); }
 function reset(room) { clearTimeout(room.timer); room.timer = null; room.gen++; room.g = null; room.players.forEach(p => { p.hand = []; }); }
 
 module.exports = {
@@ -199,5 +234,4 @@ module.exports = {
   settings: [{ key: 'decks', label: 'Decks', options: [
     { value: 'auto', label: 'Auto' }, { value: '1', label: '1 deck' }, { value: '2', label: '2 decks' } ] }],
   start, action, view, onPresence, reset, cfg,
-  _t: { label },
 };

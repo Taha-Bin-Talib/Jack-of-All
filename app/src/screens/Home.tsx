@@ -53,7 +53,13 @@ export default function Home() {
         <TextInput value={code} onChangeText={t => setCode(t.toUpperCase())} placeholder="Room code" placeholderTextColor={C.dim} autoCapitalize="characters" maxLength={4} style={[s.input, { textAlign: 'center', letterSpacing: 6, fontSize: 24 }]} />
         <Btn title="Join room" disabled={!name.trim() || code.length !== 4 || busy} onPress={() => go({ t: 'join', code })} />
 
-        {busy && <ActivityIndicator color={C.gold} style={{ marginTop: 14 }} />}
+        {busy && (
+          <View style={s.wait}>
+            <ActivityIndicator color={C.gold} />
+            <Text style={s.waitT}>{net.conn === 'online' ? 'Almost there…' : 'Please wait — it can take up to 30–60 seconds to host while the server wakes up. Keep the app open.'}</Text>
+          </View>
+        )}
+        {!busy && net.warming && net.conn !== 'online' && <Text style={[s.p, { textAlign: 'center', marginTop: 12 }]}>⏳ Waking up the server… this can take up to 30–60 seconds the first time.</Text>}
         {net.error ? <Text style={s.err}>{net.error}</Text> : null}
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 26 }}>
           <Text style={s.link} onPress={() => setMode('rules')}>How to play</Text>
@@ -72,5 +78,7 @@ const s = StyleSheet.create({
   p: { color: C.dim, fontSize: 14, lineHeight: 20, marginBottom: 6 },
   input: { backgroundColor: 'rgba(0,0,0,.35)', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,.2)', color: C.text, paddingHorizontal: 14, paddingVertical: 12, fontSize: 17, marginBottom: 14 },
   err: { color: C.danger, textAlign: 'center', marginTop: 12 },
+  wait: { flexDirection: 'row', gap: 10, alignItems: 'center', backgroundColor: 'rgba(242,193,78,.15)', borderColor: C.gold, borderWidth: 1, borderRadius: 12, padding: 12, marginTop: 14 },
+  waitT: { color: C.text, flex: 1, fontSize: 14, lineHeight: 19 },
   link: { color: C.gold, fontWeight: '700', fontSize: 15 },
 });

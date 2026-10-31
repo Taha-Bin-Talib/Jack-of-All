@@ -4,13 +4,13 @@ import { DEFAULT_SERVER } from './config';
 import type { GameInfo, RoomState } from './types';
 
 export type Conn = 'connecting' | 'online' | 'offline';
-type Snap = { conn: Conn; room: RoomState | null; catalog: GameInfo[]; error: string | null; errSeq: number; server: string; ready: boolean };
+type Snap = { waking: boolean; warming: boolean; conn: Conn; room: RoomState | null; catalog: GameInfo[]; error: string | null; errSeq: number; server: string; ready: boolean };
 
 const KEY = 'joa.session', SKEY = 'joa.server', NKEY = 'joa.name';
-let snap: Snap = { conn: 'offline', room: null, catalog: [], error: null, errSeq: 0, server: DEFAULT_SERVER, ready: false };
+let snap: Snap = { waking: false, warming: false, conn: 'offline', room: null, catalog: [], error: null, errSeq: 0, server: DEFAULT_SERVER, ready: false };
 const subs = new Set<() => void>();
 let ws: WebSocket | null = null, session: { code: string; token: string } | null = null;
-let retry: any = null, ping: any = null, wanted = false, attempts = 0;
+let retry: any = null, ping: any = null, wanted = false, attempts = 0, deadline = 0;
 const pendingFirst: any[] = [];
 
 function set(p: Partial<Snap>) { snap = { ...snap, ...p }; subs.forEach(f => f()); }
@@ -19,17 +19,27 @@ export const getSnap = () => snap;
 
 async function persist() { try { if (session) await AsyncStorage.setItem(KEY, JSON.stringify(session)); else await AsyncStorage.removeItem(KEY); } catch {} }
 
+/* Render free servers sleep: a plain HTTP request wakes them while the user is still typing a name */
+export function warmUp() {
+  const url = snap.server.replace(/^ws/, 'http');
+  if (!/^https?:/.test(url)) return;
+  set({ warming: true });
+  const stop = () => set({ warming: false });
+  const t = setTimeout(stop, 75000);
+  fetch(url + (url.endsWith('/') ? 'healthz' : '/healthz')).then(() => { clearTimeout(t); stop(); }).catch(() => { clearTimeout(t); stop(); });
+}
+
 export async function boot() {
   try {
     const s = await AsyncStorage.getItem(SKEY); if (s) snap = { ...snap, server: s };
     const j = await AsyncStorage.getItem(KEY); if (j) session = JSON.parse(j);
   } catch {}
   set({ ready: true });
-  if (session) connect();
+  if (session) connect(); else warmUp();
 }
 export const savedName = async () => { try { return (await AsyncStorage.getItem(NKEY)) || ''; } catch { return ''; } };
 export const saveName = (n: string) => { AsyncStorage.setItem(NKEY, n).catch(() => {}); };
-export async function setServer(url: string) { url = url.trim(); set({ server: url || DEFAULT_SERVER }); try { await AsyncStorage.setItem(SKEY, url || DEFAULT_SERVER); } catch {} close(); }
+export async function setServer(url: string) { url = url.trim(); set({ server: url || DEFAULT_SERVER }); try { await AsyncStorage.setItem(SKEY, url || DEFAULT_SERVER); } catch {} close(); warmUp(); }
 
 function close() { wanted = false; clearTimeout(retry); clearInterval(ping); if (ws) { ws.onclose = null; try { ws.close(); } catch {} } ws = null; set({ conn: 'offline' }); }
 
@@ -41,7 +51,7 @@ function connect() {
   try { w = new WebSocket(snap.server); } catch { return fail(); }
   ws = w;
   w.onopen = () => {
-    attempts = 0; set({ conn: 'online' });
+    attempts = 0; set({ conn: 'online', waking: false });
     if (session) w.send(JSON.stringify({ t: 'rejoin', ...session }));
     else while (pendingFirst.length) w.send(JSON.stringify(pendingFirst.shift()));
     clearInterval(ping); ping = setInterval(() => { try { w.send('{"t":"ping"}'); } catch {} }, 20000);
@@ -60,14 +70,25 @@ function connect() {
   w.onerror = () => {};
 }
 function fail() {
-  set({ conn: 'offline' }); attempts++;
-  if (!session && pendingFirst.length) { pendingFirst.length = 0; set({ error: 'Could not reach the server. Check the server address in Settings.', errSeq: snap.errSeq + 1 }); wanted = false; return; }
+  attempts++;
+  if (!session && pendingFirst.length) {
+    // the user pressed Create/Join: a sleeping Render server needs 30–60 s, so keep trying quietly
+    if (Date.now() > deadline) {
+      pendingFirst.length = 0; wanted = false;
+      set({ conn: 'offline', waking: false, error: 'The server did not wake up. Check your internet or the server address in Settings, then try again.', errSeq: snap.errSeq + 1 });
+      return;
+    }
+    set({ conn: 'connecting', waking: true });
+    retry = setTimeout(connect, 2500);
+    return;
+  }
+  set({ conn: 'offline' });
   retry = setTimeout(connect, Math.min(8000, 800 * attempts));
 }
 
 export function send(m: any) {
   if (ws && ws.readyState === 1) ws.send(JSON.stringify(m));
-  else if (m.t === 'create' || m.t === 'join') { pendingFirst.push(m); connect(); }
+  else if (m.t === 'create' || m.t === 'join') { pendingFirst.length = 0; pendingFirst.push(m); deadline = Date.now() + 100000; set({ waking: true }); connect(); }
 }
 export const act = (a: string, extra: any = {}) => send({ t: 'act', a, ...extra });
 export function leaveRoom() { send({ t: 'leave' }); session = null; persist(); set({ room: null }); }

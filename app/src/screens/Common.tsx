@@ -1,34 +1,8 @@
 import React from 'react';
-import { ScrollView, Text, View, Pressable, StyleSheet } from 'react-native';
+import { Text, View, Pressable, StyleSheet } from 'react-native';
 import { C } from '../theme';
-import { Card, Btn } from '../ui';
+import { Btn } from '../ui';
 import type { RoomState } from '../types';
-
-export function Hand({ cards, legal, selected, onTap, w = 58 }: { cards: string[]; legal?: string[]; selected?: string[]; onTap?: (c: string) => void; w?: number }) {
-  const n = cards.length;
-  const overlap = n > 9 ? -w * 0.52 : n > 6 ? -w * 0.3 : 6;
-  return (
-    <ScrollView horizontal style={{ flexGrow: 0 }} showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 6, alignItems: 'flex-end', minWidth: '100%', justifyContent: 'center' }}>
-      {cards.map((c, i) => {
-        const ok = !legal || legal.includes(c);
-        return (
-          <View key={c} style={{ marginLeft: i === 0 ? 0 : overlap }}>
-            <Card id={c} w={w} selected={selected?.includes(c)} dim={!ok} onPress={onTap && ok ? () => onTap(c) : undefined} />
-          </View>
-        );
-      })}
-    </ScrollView>
-  );
-}
-
-export function SeatChip({ name, count, active, off, out, small }: { name: string; count?: number; active?: boolean; off?: boolean; out?: boolean; small?: boolean }) {
-  return (
-    <View style={[s.chip, active && { borderColor: C.gold, backgroundColor: 'rgba(242,193,78,.22)' }, (off || out) && { opacity: 0.55 }]}>
-      <Text style={[s.chipN, small && { fontSize: 11 }]} numberOfLines={1}>{name}{off ? ' ⚡' : ''}</Text>
-      {count !== undefined && <Text style={s.chipC}>{out ? 'out ✓' : `${count} 🂠`}</Text>}
-    </View>
-  );
-}
 
 export function Header({ room, onLeave }: { room: RoomState; onLeave: () => void }) {
   return (

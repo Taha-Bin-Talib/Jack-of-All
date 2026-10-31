@@ -80,44 +80,86 @@ async function rules() {
     const b = mkRoom('bluff', 6); bl.start(b); assert.strictEqual(allCards(b).length, 104);
     clearTimeout(a.timer); clearTimeout(b.timer);
   });
-  await t('bluff caught: liar takes pile; honest call: caller takes pile', async () => {
+  await t('bluff caught: liar takes pile and opens next round', async () => {
     const r = mkRoom('bluff', 3); bl.start(r); clearTimeout(r.timer);
-    const p = r.players.find(x => x.id === r.g.turn), need = r.g.rankIdx;
+    const p = r.players.find(x => x.id === r.g.turn);
     p.hand.push('2H', '9S'); const before = p.hand.length;
-    bl.action(r, p, { a: 'play', cards: ['9S'] });           // claims Ace(s) with a 9: lie
-    const q = r.players.find(x => x !== p);
+    assert.ok(bl.action(r, p, { a: 'open', rank: 14, cards: ['9S'] }) === null);   // claims an Ace with a 9: lie
+    const q = r.players.find(x => x.id === r.g.turn);
+    assert.strictEqual(r.g.stage, 'respond'); assert.notStrictEqual(q, p);
     bl.action(r, q, { a: 'call' });
     assert.strictEqual(r.g.reveal.truthful, false);
     await sleep(30);
     assert.strictEqual(p.hand.length, before);              // played 1, took 1 back
-    assert.ok(need === 0);
+    assert.strictEqual(r.g.stage, 'open'); assert.strictEqual(r.g.turn, p.id);
+    clearTimeout(r.timer);
+  });
+  await t('honest play: caller picks up the pile', async () => {
+    const r = mkRoom('bluff', 3); bl.start(r); clearTimeout(r.timer);
+    const p = r.players.find(x => x.id === r.g.turn);
+    p.hand.push('14H');
+    bl.action(r, p, { a: 'open', rank: 14, cards: ['14H'] });
+    const q = r.players.find(x => x.id === r.g.turn), n = q.hand.length;
+    bl.action(r, q, { a: 'call' });
+    assert.strictEqual(r.g.reveal.truthful, true);
+    await sleep(30);
+    assert.strictEqual(q.hand.length, n + 1);
+    assert.strictEqual(r.g.turn, q.id);
+    clearTimeout(r.timer);
+  });
+  await t('add 1–2 cards then everyone passes: pile thrown away, last adder opens', () => {
+    const r = mkRoom('bluff', 3); bl.start(r); clearTimeout(r.timer);
+    const p = r.players.find(x => x.id === r.g.turn);
+    bl.action(r, p, { a: 'open', rank: 14, cards: [p.hand[0]] });
+    const q = r.players.find(x => x.id === r.g.turn);
+    assert.ok(bl.action(r, q, { a: 'add', cards: q.hand.slice(0, 3) }), 'adding 3 must be refused');
+    assert.strictEqual(bl.action(r, q, { a: 'add', cards: q.hand.slice(0, 2) }), null);
+    assert.strictEqual(r.g.claim.count, 3);
+    for (let i = 0; i < 2; i++) { const x = r.players.find(y => y.id === r.g.turn); assert.notStrictEqual(x, q); bl.action(r, x, { a: 'pass' }); }
+    assert.strictEqual(r.g.stage, 'open'); assert.strictEqual(r.g.turn, q.id); assert.strictEqual(r.g.gone, 3);
     clearTimeout(r.timer);
   });
   await t('empty hand without being called wins', async () => {
     const r = mkRoom('bluff', 3); bl.start(r); clearTimeout(r.timer);
     const p = r.players.find(x => x.id === r.g.turn);
     p.hand = ['14H'];
-    bl.action(r, p, { a: 'play', cards: ['14H'] });
-    r.players.filter(x => x !== p).forEach(x => bl.action(r, x, { a: 'pass' }));
+    bl.action(r, p, { a: 'open', rank: 14, cards: ['14H'] });
+    for (let i = 0; i < 2; i++) { const x = r.players.find(y => y.id === r.g.turn); bl.action(r, x, { a: 'pass' }); }
     assert.strictEqual(r.phase, 'over'); assert.strictEqual(r.g.winnerId, p.id);
   });
 
   console.log('Jack Thief'); const jt = games.get('jackthief');
-  await t('one Jack removed, pairs gone, exactly one odd Jack remains', () => {
+  await t('all 51 cards dealt un-thrown; players throw pairs themselves', () => {
     const r = mkRoom('jackthief', 4); jt.start(r); clearTimeout(r.timer);
-    const cards = allCards(r), by = {};
-    cards.forEach(c => by[rank(c)] = (by[rank(c)] || 0) + 1);
-    assert.strictEqual(by[11] % 2, 1);
+    assert.strictEqual(allCards(r).length, 51); assert.strictEqual(r.g.thrown.length, 0); assert.strictEqual(r.g.stage, 'sort');
+    const p = r.players[0];
+    p.hand = ['5H', '5D', '9C', '9S', '11H']; r.g.ready = [];
+    assert.ok(jt.action(r, p, { a: 'throw', cards: ['5H', '9C'] }), 'not a pair');
+    assert.ok(jt.action(r, p, { a: 'done' }), 'cannot be done while holding a pair');
+    assert.strictEqual(jt.action(r, p, { a: 'throw', cards: ['5H', '5D'] }), null);
+    assert.strictEqual(jt.action(r, p, { a: 'throw', cards: ['9C', '9S'] }), null);
+    assert.deepStrictEqual(p.hand, ['11H']); assert.strictEqual(r.g.thrown.length, 4);
+    assert.strictEqual(jt.action(r, p, { a: 'done' }), null);
+    assert.ok(r.g.ready.includes(p.id));
+    clearTimeout(r.timer);
+  });
+  await t('game starts when everyone is done; sort timeout auto-throws', async () => {
+    const r = mkRoom('jackthief', 3); jt.cfg.SORT_MS = 30; jt.start(r);
+    await sleep(80);
+    assert.strictEqual(r.g.stage, 'turn');
     r.players.forEach(p => { const ks = p.hand.map(rank); assert.strictEqual(new Set(ks).size, ks.length); });
-    assert.strictEqual(cards.length + r.g.discarded, 51);
+    assert.strictEqual(allCards(r).length + r.g.thrown.length, 51);
+    jt.cfg.SORT_MS = 90000; clearTimeout(r.timer);
   });
   await t('drawing a match discards the pair', () => {
     const r = mkRoom('jackthief', 3); jt.start(r); clearTimeout(r.timer);
-    const p = r.players.find(x => x.id === r.g.turn), v = r.players.find(x => x.id === r.g.pick.fromId);
-    p.hand = ['5H', '9C']; v.hand = ['5D', '12S'];
-    r.g.pick.perm = [0, 1]; r.g.pick.n = 2;
-    jt.action(r, p, { a: 'draw', i: 0 });
-    assert.deepStrictEqual(p.hand, ['9C']);
+    r.players.forEach(p => { p.hand = []; });
+    r.players.forEach(p => jt.action(r, p, { a: 'done' }));
+    r.players[0].hand = ['5H', '9C']; r.players[1].hand = ['5D', '12S']; r.players[2].hand = ['7C'];
+    r.g.stage = 'turn'; r.g.turn = 'p0'; r.g.pick = { pid: 'p0', fromId: 'p1', n: 2, perm: [0, 1] };
+    jt.action(r, r.players[0], { a: 'draw', i: 0 });
+    assert.deepStrictEqual(r.players[0].hand, ['9C']);
+    assert.strictEqual(r.g.thrown.length, 2);
     clearTimeout(r.timer);
   });
 }
@@ -133,19 +175,29 @@ function pickAction(room, p, v) {
       return { a: 'play', card: v.you.legal[crypto.randomInt(v.you.legal.length)] };
     }
   } else if (id === 'bluff') {
-    if (v.turn === p.id) {
-      const h = v.you.hand, n = 1 + crypto.randomInt(Math.min(4, h.length));
-      return { a: 'play', cards: h.slice().sort(() => Math.random() - 0.5).slice(0, n) };
+    if (v.turn !== p.id) return null;
+    const h = v.you.hand, pick = n => h.slice().sort(() => Math.random() - 0.5).slice(0, n);
+    if (v.stage === 'open') return { a: 'open', rank: 2 + crypto.randomInt(13), cards: pick(1 + crypto.randomInt(Math.min(4, h.length))) };
+    const x = Math.random();
+    if (v.you.canCall && x < 0.25) return { a: 'call' };
+    if (x < 0.5 && h.length) return { a: 'add', cards: pick(1 + crypto.randomInt(Math.min(2, h.length))) };
+    return { a: 'pass' };
+  } else {
+    if (v.stage === 'sort') {
+      if (v.you.done) return null;
+      const by = {}; for (const c of v.you.hand) (by[rank(c)] = by[rank(c)] || []).push(c);
+      const pr = Object.values(by).find(a => a.length >= 2);
+      return pr ? { a: 'throw', cards: [pr[0], pr[1]] } : { a: 'done' };
     }
-    if (v.challenge && !v.challenge.decided) return { a: Math.random() < 0.25 ? 'call' : 'pass' };
-  } else if (v.you.mustDraw) return { a: 'draw', i: crypto.randomInt(v.pick.n) };
+    if (v.you.mustDraw) return { a: 'draw', i: crypto.randomInt(v.pick.n) };
+  }
   return null;
 }
 function total(room) {
   const g = room.g;
   if (room.game === 'thulla') return allCards(room).length + g.discarded + (g.settle && g.settle.kind === 'thulla' ? g.trick.plays.length : 0) + (g.settle && g.settle.kind === 'discard' ? g.trick.plays.length : 0) + (g.trick && !g.settle ? g.trick.plays.length : 0);
-  if (room.game === 'bluff') return allCards(room).length + g.pile.length;
-  return allCards(room).length + g.discarded;
+  if (room.game === 'bluff') return allCards(room).length + g.pile.length + g.gone;
+  return allCards(room).length + g.thrown.length;
 }
 async function sim() {
   const cases = [['thulla', 3], ['thulla', 5], ['thulla', 8], ['bluff', 3], ['bluff', 5], ['bluff', 8], ['jackthief', 2], ['jackthief', 4], ['jackthief', 10]];
