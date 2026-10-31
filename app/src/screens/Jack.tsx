@@ -2,7 +2,7 @@ import React from 'react';
 import { ScrollView, Text, View, StyleSheet } from 'react-native';
 import { C } from '../theme';
 import { act } from '../net';
-import { Btn, Card, TimerBar, Toast, nameOf, rankOf } from '../ui';
+import { Btn, Card, TimerBar, Toast, nameOf, rankOf, rankLabel, suitOf } from '../ui';
 import { DealFx, Geo, Hand, PileStack, Ring, Seat, TurnArrow, useFlights } from '../table/Table';
 import type { RoomState } from '../types';
 
@@ -22,21 +22,26 @@ export default function Jack({ room }: { room: RoomState }) {
   const g = room.g, me = room.you.id, P = room.players;
   const sorting = g.stage === 'sort';
   const [pick, setPick] = React.useState<string | null>(null);
-  React.useEffect(() => { setPick(null); }, [g.stage]);
-  const myTurn = g.you.mustDraw, pk = g.pick;
-  // while sorting the hand is shown by rank so pairs are easy to see
-  const hand: string[] = sorting ? [...g.you.hand].sort((a, b) => rankOf(a) - rankOf(b)) : g.you.hand;
+  React.useEffect(() => { setPick(null); }, [g.stage, g.last?.id]);
+  const myTurn = g.you.mustDraw, pk = g.pick, resolving = !!g.you.resolving, drawn: string | null = g.you.drawn || null;
+  const throwing = (sorting && !g.you.done) || resolving;
+  // while sorting (or checking a drawn card) the hand is shown by rank so pairs are easy to see
+  const hand: string[] = sorting || resolving ? [...g.you.hand].sort((a, b) => rankOf(a) - rankOf(b)) : g.you.hand;
   const counts: Record<number, number> = {};
   for (const c of hand) counts[rankOf(c)] = (counts[rankOf(c)] || 0) + 1;
-  const glow = sorting ? hand.filter(c => counts[rankOf(c)] > 1) : [];
+  const glow = sorting || resolving ? hand.filter(c => counts[rankOf(c)] > 1) : [];
   const onTap = (c: string) => {
-    if (!sorting || g.you.done) return;
+    if (!throwing) return;
     if (pick === c) return setPick(null);
     if (pick && rankOf(pick) === rankOf(c)) { act('throw', { cards: [pick, c] }); return setPick(null); }
     setPick(c);
   };
   const thrown: string[] = [...g.thrown].sort((a, b) => rankOf(a) - rankOf(b));
-  const hint = sorting ? (g.you.done ? 'Waiting for the others to finish…' : g.you.pairs ? 'Tap two cards of the same rank to throw the pair away' : 'No pairs left — tap Done')
+  const SYMS: Record<string, string> = { S: '♠', H: '♥', D: '♦', C: '♣' };
+  const drawnName = drawn ? `${rankLabel(rankOf(drawn))}${SYMS[suitOf(drawn)]}` : '';
+  const resolver = g.turn && !myTurn ? nameOf(P, g.turn) : '';
+  const hint = resolving ? (g.you.pairs ? `You picked ${drawnName} — tap the two matching cards to throw the pair away` : `You picked ${drawnName} — no pair, tap Done`)
+    : g.stage === 'resolve' && resolver ? `${resolver} picked a card and is checking for a pair…` : sorting ? (g.you.done ? 'Waiting for the others to finish…' : g.you.pairs ? 'Tap two cards of the same rank to throw the pair away' : 'No pairs left — tap Done')
     : myTurn ? `Your turn — draw a card from ${nameOf(P, pk.fromId)}` : pk ? `${nameOf(P, pk.pid)} is drawing from ${nameOf(P, pk.fromId)}` : '';
   return (
     <View style={{ flex: 1 }}>
@@ -71,7 +76,13 @@ export default function Jack({ room }: { room: RoomState }) {
           <View style={st.backs}>{Array.from({ length: pk.n }).map((_, i) => <Card key={i} back w={44} onPress={() => act('draw', { i })} />)}</View>
         </View>
       )}
-      {sorting && !g.you.done && <Btn title="Done" kind="green" disabled={g.you.pairs} style={{ marginHorizontal: 14, paddingVertical: 10, marginBottom: 2 }} onPress={() => act('done')} />}
+      {resolving && drawn && (
+        <View style={[st.panel, { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12 }]}>
+          <Text style={st.small}>You picked</Text>
+          <Card id={drawn} w={50} glow />
+        </View>
+      )}
+      {((sorting && !g.you.done) || resolving) && <Btn title="Done" kind="green" disabled={g.you.pairs} style={{ marginHorizontal: 14, paddingVertical: 10, marginBottom: 2 }} onPress={() => act('done')} />}
 
       {thrown.length > 0 && (
         <View style={st.thrown}>
@@ -81,7 +92,7 @@ export default function Jack({ room }: { room: RoomState }) {
           </ScrollView>
         </View>
       )}
-      <Hand cards={hand} selected={pick ? [pick] : []} glow={glow} animateIn={sorting && g.thrown.length === 0} onTap={sorting && !g.you.done ? onTap : undefined} />
+      <Hand cards={hand} selected={pick ? [pick] : []} glow={glow} animateIn={sorting && g.thrown.length === 0} onTap={throwing ? onTap : undefined} />
     </View>
   );
 }

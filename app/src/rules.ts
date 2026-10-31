@@ -19,7 +19,7 @@ export const RULES: Record<string, { title: string; text: string[] }> = {
   jackthief: { title: 'Jack Thief (2–10 players)', text: [
     'One random Jack is removed and ALL the other cards are dealt out.',
     'First, everyone throws away their own pairs of the same rank: tap two cards of the same rank and they go to the thrown-away pile, where everyone can see them. Tap Done when you have no pairs left.',
-    'Then take turns drawing one face-down card from the next player. If it matches a card in your hand, throw the pair away.',
+    'Then take turns drawing one face-down card from the next player. You are shown which card you picked and it joins your hand. If it matches a card you hold, tap the two cards to throw the pair away yourself, then tap Done.',
     'The player left holding the unmatched Jack is the Jack Thief — and loses!',
     'You have 1 minute to draw, or a random card is drawn for you.' ] },
 };

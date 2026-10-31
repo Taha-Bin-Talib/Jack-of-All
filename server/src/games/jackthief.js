@@ -1,7 +1,8 @@
 'use strict';
 // JACK THIEF (Old-Maid style) — 2–10 players. One random Jack is removed and all 51 cards are dealt.
 // SORT phase: every player throws away their own pairs (same rank) face-up, so everyone can see what is out,
-// then taps Done. Then players take turns drawing one hidden card from the next player; a match is thrown away.
+// then taps Done. Then players take turns drawing one hidden card from the next player. The drawn card goes into
+// the drawer's hand (only they see which card it is) and THEY throw the new pair away themselves, then tap Done.
 // Whoever is left holding the unpaired Jack is the Jack Thief.
 const crypto = require('crypto');
 const { later, setEvent, num } = require('../net');
@@ -64,17 +65,25 @@ function autoSort(room, p) {
 
 function throwPair(room, p, a, b) {
   const g = room.g;
-  if (g.stage !== 'sort') return 'Pairs are only thrown at the start.';
-  if (g.ready.includes(p.id)) return 'You already tapped Done.';
+  const resolving = g.stage === 'resolve' && g.turn === p.id;
+  if (g.stage !== 'sort' && !resolving) return 'You can only throw pairs at the start or after drawing.';
+  if (g.stage === 'sort' && g.ready.includes(p.id)) return 'You already tapped Done.';
   if (typeof a !== 'string' || typeof b !== 'string' || a === b || !p.hand.includes(a) || !p.hand.includes(b)) return 'Pick two cards from your hand.';
   if (rank(a) !== rank(b)) return 'Those two cards are not a pair.';
   p.hand.splice(p.hand.indexOf(a), 1); p.hand.splice(p.hand.indexOf(b), 1);
   g.thrown.push(a, b);
+  if (resolving) setEvent(room, 'draw', `${p.name} threw away a pair of ${label(a).replace(/[♠♥♦♣]/g, '')}s`);
   return null;
 }
 
 function done(room, p) {
   const g = room.g;
+  if (g.stage === 'resolve') {
+    if (g.turn !== p.id) return 'It is not your turn.';
+    if (hasPair(p.hand)) return 'You still hold a pair — throw it away first.';
+    endResolve(room, p);
+    return null;
+  }
   if (g.stage !== 'sort') return null;
   if (hasPair(p.hand)) return 'You still hold a pair — throw it away first.';
   if (!g.ready.includes(p.id)) g.ready.push(p.id);
@@ -106,19 +115,20 @@ function draw(room, p, i) {
   const victim = byId(room, pk.fromId);
   clearTimeout(room.timer); room.timer = null;
   const card = victim.hand.splice(pk.perm[i], 1)[0];
-  const matched = p.hand.find(c => rank(c) === rank(card));
-  let text;
-  if (matched) {
-    p.hand.splice(p.hand.indexOf(matched), 1); g.thrown.push(matched, card);
-    text = `${p.name} drew ${label(card)} from ${victim.name} — pair!`;
-  } else {
-    p.hand.push(card);
-    p.hand = shuffle(p.hand);
-    text = `${p.name} drew a card from ${victim.name}`;
-  }
-  g.last = { id: ++g.fx, pid: p.id, fromId: victim.id, card, matched: !!matched };
-  g.stage = 'settle'; g.turn = null; g.pick = null;
-  setEvent(room, 'draw', text);
+  p.hand.push(card); p.hand = shuffle(p.hand);
+  g.last = { id: ++g.fx, pid: p.id, fromId: victim.id, card };
+  g.stage = 'resolve'; g.pick = null; g.turn = p.id; g.from = victim.id;
+  g.turnUntil = Date.now() + cfg.TURN_MS;
+  setEvent(room, 'draw', `${p.name} drew a card from ${victim.name}`);
+  scheduleBot(room);
+}
+
+/* the drawer has thrown any new pair and tapped Done (or ran out of time): pass the turn on */
+function endResolve(room, p) {
+  const g = room.g;
+  clearTimeout(room.timer); room.timer = null;
+  const victim = byId(room, g.from);
+  g.stage = 'settle'; g.turn = null;
   const holders = room.players.filter(q => q.hand.length);
   if (holders.length <= 1) return later(room, cfg.SETTLE_MS, () => finish(room));
   later(room, cfg.SETTLE_MS, () => {
@@ -140,16 +150,22 @@ function finish(room) {
 
 function scheduleBot(room) {
   const g = room.g;
-  if (room.phase !== 'playing' || g.stage !== 'turn') return;
+  if (room.phase !== 'playing' || (g.stage !== 'turn' && g.stage !== 'resolve')) return;
   clearTimeout(room.timer); room.timer = null;
   const p = byId(room, g.turn);
   if (!p) return;
-  const turn = g.turn, gen = room.gen;
+  const turn = g.turn, stage = g.stage, gen = room.gen;
   const remaining = Math.max(0, g.turnUntil - Date.now());
   const wait = p.connected ? remaining : Math.min(remaining, cfg.BOT_MS);
   later(room, Math.max(1, wait), () => {
-    if (room.gen !== gen || g.stage !== 'turn' || g.turn !== turn) return;
+    if (room.gen !== gen || g.stage !== stage || g.turn !== turn) return;
     if (p.connected && Date.now() < g.turnUntil - 5) return scheduleBot(room);
+    if (stage === 'resolve') {
+      if (p.connected) setEvent(room, 'info', `${p.name} ran out of time — pairs were thrown for them`);
+      const { keep, dropped } = dropPairs(p.hand);
+      p.hand = shuffle(keep); g.thrown.push(...dropped);
+      return endResolve(room, p);
+    }
     if (p.connected) setEvent(room, 'info', `${p.name} ran out of time — a card was drawn for them`);
     draw(room, p, crypto.randomInt(g.pick.perm.length));
   });
@@ -175,16 +191,17 @@ function view(room, p) {
   const playing = room.phase === 'playing';
   const over = room.phase === 'over';
   return {
-    phase: room.phase, stage: g.stage, turn: playing && g.stage === 'turn' ? g.turn : null,
+    phase: room.phase, stage: g.stage, turn: playing && (g.stage === 'turn' || g.stage === 'resolve') ? g.turn : null,
     pick: playing && g.pick ? { pid: g.pick.pid, fromId: g.pick.fromId, n: g.pick.n } : null,
-    last: g.last ? { id: g.last.id, pid: g.last.pid, fromId: g.last.fromId, matched: g.last.matched,
-      card: g.last.pid === p.id || g.last.matched || over ? g.last.card : null } : null,
+    last: g.last ? { id: g.last.id, pid: g.last.pid, fromId: g.last.fromId,
+      card: g.last.pid === p.id || over ? g.last.card : null } : null,
     thrown: g.thrown, ready: g.ready, sortMs: g.stage === 'sort' ? Math.max(0, g.sortUntil - Date.now()) : 0,
     thiefId: g.thiefId, event: g.event,
-    timer: playing && g.stage === 'turn' && g.turn ? { pid: g.turn, ms: Math.max(0, g.turnUntil - Date.now()) } : null,
+    timer: playing && (g.stage === 'turn' || g.stage === 'resolve') && g.turn ? { pid: g.turn, ms: Math.max(0, g.turnUntil - Date.now()) } : null,
     direction: room.settings.direction,
     seats: room.players.map(q => ({ id: q.id, count: q.hand.length, ready: g.ready.includes(q.id) })),
-    you: { hand: p.hand, mustDraw: playing && g.stage === 'turn' && g.turn === p.id, done: g.ready.includes(p.id), pairs: hasPair(p.hand) },
+    you: { hand: p.hand, mustDraw: playing && g.stage === 'turn' && g.turn === p.id, resolving: playing && g.stage === 'resolve' && g.turn === p.id,
+      drawn: playing && g.stage === 'resolve' && g.turn === p.id && g.last ? g.last.card : null, done: g.ready.includes(p.id), pairs: hasPair(p.hand) },
   };
 }
 

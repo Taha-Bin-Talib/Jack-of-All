@@ -182,15 +182,22 @@ async function rules() {
     assert.strictEqual(allCards(r).length + r.g.thrown.length, 51);
     jt.cfg.SORT_MS = 90000; clearTimeout(r.timer);
   });
-  await t('drawing a match discards the pair', () => {
+  await t('drawing a match: player must throw the pair themselves', () => {
     const r = mkRoom('jackthief', 3); jt.start(r); clearTimeout(r.timer);
     r.players.forEach(p => { p.hand = []; });
     r.players.forEach(p => jt.action(r, p, { a: 'done' }));
     r.players[0].hand = ['5H', '9C']; r.players[1].hand = ['5D', '12S']; r.players[2].hand = ['7C'];
-    r.g.stage = 'turn'; r.g.turn = 'p0'; r.g.pick = { pid: 'p0', fromId: 'p1', n: 2, perm: [0, 1] };
+    r.phase = 'playing'; r.g.stage = 'turn'; r.g.turn = 'p0'; r.g.pick = { pid: 'p0', fromId: 'p1', n: 2, perm: [0, 1] };
     jt.action(r, r.players[0], { a: 'draw', i: 0 });
-    assert.deepStrictEqual(r.players[0].hand, ['9C']);
+    assert.strictEqual(r.g.stage, 'resolve'); assert.strictEqual(r.players[0].hand.length, 3);
+    const v = jt.view(r, r.players[0]); assert.strictEqual(v.you.drawn, '5D'); assert.ok(v.you.resolving);
+    assert.strictEqual(jt.view(r, r.players[2]).last.card, null, 'others do not see the card');
+    assert.ok(jt.action(r, r.players[0], { a: 'done' }), 'cannot finish with a pair in hand');
+    assert.ok(jt.action(r, r.players[2], { a: 'throw', cards: ['7C', '7C'] }), 'others cannot throw');
+    assert.strictEqual(jt.action(r, r.players[0], { a: 'throw', cards: ['5H', '5D'] }), null);
     assert.strictEqual(r.g.thrown.length, 2);
+    assert.strictEqual(jt.action(r, r.players[0], { a: 'done' }), null);
+    assert.strictEqual(r.g.stage, 'settle');
     clearTimeout(r.timer);
   });
 }
@@ -221,6 +228,11 @@ function pickAction(room, p, v) {
       return pr ? { a: 'throw', cards: [pr[0], pr[1]] } : { a: 'done' };
     }
     if (v.you.mustDraw) return { a: 'draw', i: crypto.randomInt(v.pick.n) };
+    if (v.you.resolving) {
+      const by = {}; for (const c of v.you.hand) (by[rank(c)] = by[rank(c)] || []).push(c);
+      const pr = Object.values(by).find(a => a.length >= 2);
+      return pr ? { a: 'throw', cards: [pr[0], pr[1]] } : { a: 'done' };
+    }
   }
   return null;
 }
