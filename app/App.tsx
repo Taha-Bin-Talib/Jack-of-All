@@ -11,6 +11,7 @@ import Bluff from './src/screens/Bluff';
 import Jack from './src/screens/Jack';
 import { Header, Overlay } from './src/screens/Common';
 import { nameOf } from './src/ui';
+import Chat from './src/Chat';
 
 function GameKeepAwake() { useKeepAwake(); return null; }
 
@@ -37,7 +38,7 @@ function Root() {
     let over: { title: string; lines: string[] } | null = null;
     if (room.phase === 'over' && g) {
       if (room.game === 'thulla') over = g.loserId ? { title: g.loserId === room.you.id ? 'You are the Bhabhi!' : `${nameOf(room.players, g.loserId)} is the Bhabhi!`, lines: [] } : { title: 'Draw', lines: ['Nobody is the Bhabhi.'] };
-      else if (room.game === 'bluff') over = { title: g.winnerId === room.you.id ? 'You win! 🎉' : `${nameOf(room.players, g.winnerId)} wins!`, lines: [] };
+      else if (room.game === 'bluff') over = { title: g.loserId === room.you.id ? 'You are left holding the cards!' : g.loserId ? `${nameOf(room.players, g.loserId)} is left holding the cards!` : 'Game over', lines: g.winnerId ? [`${g.winnerId === room.you.id ? 'You' : nameOf(room.players, g.winnerId)} got out first 🎉`] : [] };
       else over = g.thiefId ? { title: g.thiefId === room.you.id ? 'You are the Jack Thief!' : `${nameOf(room.players, g.thiefId)} is the Jack Thief!`, lines: [] } : { title: 'Draw', lines: [] };
     }
     body = (
@@ -54,6 +55,7 @@ function Root() {
       <StatusBar barStyle="light-content" />
       {room && net.conn !== 'online' && <Text style={st.banner} onPress={reconnectNow}>Reconnecting… tap to retry</Text>}
       {body}
+      {room && net.ready && <Chat />}
     </View>
   );
 }

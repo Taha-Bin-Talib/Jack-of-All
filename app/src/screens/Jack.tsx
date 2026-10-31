@@ -3,7 +3,7 @@ import { ScrollView, Text, View, StyleSheet } from 'react-native';
 import { C } from '../theme';
 import { act } from '../net';
 import { Btn, Card, TimerBar, Toast, nameOf, rankOf } from '../ui';
-import { DealFx, Geo, Hand, PileStack, Ring, Seat, useFlights } from '../table/Table';
+import { DealFx, Geo, Hand, PileStack, Ring, Seat, TurnArrow, useFlights } from '../table/Table';
 import type { RoomState } from '../types';
 
 function Fx({ geo, g }: { geo: Geo; g: any }) {
@@ -44,7 +44,7 @@ export default function Jack({ room }: { room: RoomState }) {
       <Ring players={P} meId={me}>
         {geo => (
           <>
-            <PileStack geo={geo} count={0} />
+            <TurnArrow geo={geo} i={sorting ? -1 : geo.idx(g.turn || '')} />
             <View style={{ position: 'absolute', left: geo.cx - geo.u * 14, width: geo.u * 28, top: geo.cy - geo.u * 4, alignItems: 'center' }}>
               <Text style={st.big}>{g.thrown.length}</Text>
               <Text style={st.small}>cards thrown away</Text>
@@ -76,7 +76,7 @@ export default function Jack({ room }: { room: RoomState }) {
       {thrown.length > 0 && (
         <View style={st.thrown}>
           <Text style={st.small}>Thrown away</Text>
-          <ScrollView style={{ maxHeight: 74 }} contentContainerStyle={{ flexDirection: 'row', flexWrap: 'wrap', gap: 2, justifyContent: 'center' }}>
+          <ScrollView style={{ maxHeight: 64 }} contentContainerStyle={{ flexDirection: 'row', flexWrap: 'wrap', gap: 2, justifyContent: 'center' }}>
             {thrown.map((c, i) => <Card key={c + i} id={c} w={22} />)}
           </ScrollView>
         </View>
@@ -87,7 +87,7 @@ export default function Jack({ room }: { room: RoomState }) {
 }
 
 const st = StyleSheet.create({
-  hint: { color: C.text, fontSize: 13, textAlign: 'center', paddingHorizontal: 14, minHeight: 20, fontWeight: '600' },
+  hint: { color: '#fff', fontSize: 16, textAlign: 'center', paddingHorizontal: 14, minHeight: 24, fontWeight: '800' },
   big: { color: C.gold, fontSize: 26, fontWeight: '900' },
   small: { color: C.dim, fontSize: 11, textAlign: 'center' },
   panel: { marginHorizontal: 12, marginBottom: 4, padding: 8, borderRadius: 14, backgroundColor: 'rgba(0,0,0,.45)', borderWidth: 1, borderColor: C.gold },

@@ -8,14 +8,15 @@ export const rankOf = (id: string) => parseInt(id, 10);
 export const suitOf = (id: string) => /[SHDC]/.exec(id)![0];
 export const rankLabel = (r: number) => RN[r] || String(r);
 
-/* A clean playing card: index in two corners, big pip (or court letter) in the middle. */
-export function Card({ id, w = 54, back, selected, dim, glow, indexOnly, onPress, style }: {
-  id?: string; w?: number; back?: boolean; selected?: boolean; dim?: boolean; glow?: boolean; indexOnly?: boolean; onPress?: () => void; style?: ViewStyle;
+/* Playing card: rank written horizontally in the top-left and (turned over) bottom-right corners,
+   one big suit symbol in the middle. */
+export function Card({ id, w = 54, back, selected, dim, glow, onPress, style }: {
+  id?: string; w?: number; back?: boolean; selected?: boolean; dim?: boolean; glow?: boolean; onPress?: () => void; style?: ViewStyle;
 }) {
-  const h = Math.round(w * 1.4), rad = Math.max(4, w * 0.11);
+  const h = Math.round(w * 1.4), rad = Math.max(4, w * 0.12);
   const wrap: ViewStyle = {
     width: w, height: h, borderRadius: rad,
-    shadowColor: '#000', shadowOpacity: 0.35, shadowRadius: 2.5, shadowOffset: { width: 0, height: 1.5 }, elevation: 3,
+    shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 2.5, shadowOffset: { width: 0, height: 1.5 }, elevation: 3,
   };
   let inner: React.ReactNode;
   if (back || !id) {
@@ -30,36 +31,30 @@ export function Card({ id, w = 54, back, selected, dim, glow, indexOnly, onPress
       </View>
     );
   } else {
-    const s = suitOf(id), r = rankOf(id), red = s === 'H' || s === 'D', col = red ? C.red : C.black, court = r >= 11 && r <= 13;
-    const idx = (
-      <View style={{ alignItems: 'center', width: w * 0.3 }}>
-        <Text allowFontScaling={false} style={[st.rk, { color: col, fontSize: w * (rankLabel(r).length > 1 ? 0.27 : 0.32) * (indexOnly ? 1.1 : 1) }]}>{rankLabel(r)}</Text>
-        <Text allowFontScaling={false} style={[st.sm, { color: col, fontSize: w * 0.25 * (indexOnly ? 1.1 : 1) }]}>{SYM[s]}</Text>
-      </View>
-    );
-    if (w < 40) {            // tiny cards (thrown pile, peeked hands): one centred index, nothing else
-      return (
-        <View style={[wrap, st.face, { borderRadius: Math.max(3, w * 0.12) }, style]}>
-          <Text allowFontScaling={false} style={[st.rk, { color: col, fontSize: w * 0.42 }]}>{rankLabel(r)}</Text>
-          <Text allowFontScaling={false} style={[st.sm, { color: col, fontSize: w * 0.36, marginTop: -w * 0.04 }]}>{SYM[s]}</Text>
+    const s = suitOf(id), r = rankOf(id), red = s === 'H' || s === 'D', col = red ? C.red : C.black, lab = rankLabel(r);
+    if (w < 40) {            // tiny cards: one centred index
+      inner = (
+        <View style={[wrap, st.face, style]}>
+          <Text allowFontScaling={false} numberOfLines={1} style={[st.rk, { color: col, fontSize: w * 0.42 }]}>{lab}</Text>
+          <Text allowFontScaling={false} numberOfLines={1} style={[st.sm, { color: col, fontSize: w * 0.36 }]}>{SYM[s]}</Text>
+        </View>
+      );
+    } else {
+      const idx = (
+        <View style={{ alignItems: 'center' }}>
+          <Text allowFontScaling={false} numberOfLines={1} style={[st.rk, { color: col, fontSize: w * 0.3, lineHeight: w * 0.33 }]}>{lab}</Text>
+          <Text allowFontScaling={false} numberOfLines={1} style={[st.sm, { color: col, fontSize: w * 0.21, lineHeight: w * 0.23 }]}>{SYM[s]}</Text>
+        </View>
+      );
+      inner = (
+        <View style={[wrap, st.face, selected && st.sel, glow && st.glow, style]}>
+          <View style={{ position: 'absolute', left: w * 0.08, top: w * 0.05 }}>{idx}</View>
+          <View style={{ position: 'absolute', right: w * 0.08, bottom: w * 0.05, transform: [{ rotate: '180deg' }] }}>{idx}</View>
+          <Text allowFontScaling={false} numberOfLines={1} style={{ color: col, fontSize: w * 0.62, includeFontPadding: false }}>{SYM[s]}</Text>
         </View>
       );
     }
-    inner = (
-      <View style={[wrap, st.face, selected && st.sel, glow && st.glow, style]}>
-        <View style={{ position: 'absolute', left: w * 0.05, top: w * 0.03 }}>{idx}</View>
-        <View style={{ position: 'absolute', right: w * 0.05, bottom: w * 0.03, transform: [{ rotate: '180deg' }] }}>{idx}</View>
-        {dim && <View pointerEvents="none" style={{ position: 'absolute', left: 0, top: 0, right: 0, bottom: 0, borderRadius: rad, backgroundColor: 'rgba(20,30,25,.5)', zIndex: 5 }} />}
-        {indexOnly ? null : court ? (
-          <View style={[st.court, { width: w * 0.5, height: h * 0.52 }]}>
-            <Text allowFontScaling={false} style={{ color: col, fontSize: w * 0.34, fontWeight: '800' }}>{rankLabel(r)}</Text>
-            <Text allowFontScaling={false} style={{ color: col, fontSize: w * 0.3 }}>{SYM[s]}</Text>
-          </View>
-        ) : (
-          <Text allowFontScaling={false} style={{ color: col, fontSize: w * (r === 14 ? 0.62 : 0.5), marginTop: -w * 0.02 }}>{SYM[s]}</Text>
-        )}
-      </View>
-    );
+    if (dim) inner = <View>{inner}<View pointerEvents="none" style={{ position: 'absolute', left: 0, top: 0, right: 0, bottom: 0, borderRadius: rad, backgroundColor: 'rgba(20,30,25,.5)' }} /></View>;
   }
   return onPress ? <Pressable onPress={onPress} hitSlop={3}>{inner}</Pressable> : <View>{inner}</View>;
 }
@@ -93,7 +88,7 @@ export function Toast({ ev }: { ev?: { seq: number; type?: string; text: string 
 export const nameOf = (players: { id: string; name: string }[], id?: string | null) => players.find(p => p.id === id)?.name ?? '';
 
 export const st = StyleSheet.create({
-  face: { backgroundColor: '#fdfdfb', borderWidth: StyleSheet.hairlineWidth * 2, borderColor: '#bdbdb2', alignItems: 'center', justifyContent: 'center' },
+  face: { backgroundColor: '#ffffff', borderWidth: StyleSheet.hairlineWidth * 2, borderColor: '#bdbdb2', alignItems: 'center', justifyContent: 'center' },
   back: { backgroundColor: C.back, borderWidth: 2, borderColor: '#fff' },
   backIn: { flex: 1, borderWidth: 1.2, borderColor: C.backLine, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,.06)' },
   sel: { borderColor: C.gold, borderWidth: 2.5 },

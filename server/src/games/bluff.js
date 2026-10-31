@@ -4,7 +4,8 @@
 // player may CALL BLUFF on the last play, ADD 1 or 2 more face-down cards to the pile (the claim grows, same rank),
 // or PASS. If everybody passes in a row the pile is thrown away and the last player to add opens a new round.
 // A called play is revealed: if it was a lie the player who played it picks up the pile, otherwise the caller does.
-// The one who picks up the pile opens the next round. First to empty their hand without being caught wins.
+// The one who picks up the pile opens the next round. A player who empties their hand without being caught is SAFE
+// (out of the game); play goes on until only one player still holds cards — that player loses.
 const crypto = require('crypto');
 const { later, setEvent, num } = require('../net');
 const { rank, sortHand, newDeck, rankName, rankWord } = require('../cards');
@@ -16,6 +17,15 @@ const cfg = {
   MAX_OPEN: 4, MAX_ADD: 2,
 };
 const byId = (room, id) => room.players.find(p => p.id === id);
+const holders = room => room.players.filter(p => p.hand.length > 0);
+function markOut(room, p) { if (!p.out && p.hand.length === 0) { p.out = true; p.place = ++room.g.outCounter; } }
+/* the game is over as soon as at most one player still holds cards */
+function checkEnd(room) {
+  const h = holders(room);
+  if (h.length > 1) return false;
+  endGame(room, h[0] || null);
+  return true;
+}
 
 /* next player clockwise after `p` who still has cards (and isn't `skip`) */
 function nextAfter(room, p, skip) {
@@ -39,7 +49,7 @@ function start(room) {
   room.phase = 'playing';
   const copies = decksFor(room);
   room.g = { stage: 'open', turn: null, seq: 0, event: null, pile: [], claim: null, last: null, passes: 0, reveal: null,
-    winnerId: null, turnUntil: 0, decks: copies, fx: 0, gone: 0 };
+    winnerId: null, loserId: null, outCounter: 0, turnUntil: 0, decks: copies, fx: 0, gone: 0 };
   room.players.forEach(p => { p.hand = []; p.out = false; p.place = 0; });
   newDeck(copies).forEach((c, i) => room.players[i % room.players.length].hand.push(c));
   room.players.forEach(p => sortHand(p.hand));
@@ -82,6 +92,11 @@ function open(room, p, r, cards) {
 
 function add(room, p, cards) {
   const g = room.g;
+  const prev = byId(room, g.last.pid);
+  if (prev && prev !== p && prev.hand.length === 0) {       // nobody called their last cards: they are safe
+    markOut(room, prev);
+    setEvent(room, 'info', `${prev.name} got rid of all their cards — safe!`);
+  }
   g.claim.count += cards.length;
   g.claim.by = p.id;
   putCards(room, p, cards, `${p.name} adds ${cards.length} — now ${rankWord(g.claim.rank, g.claim.count)}`);
@@ -104,9 +119,11 @@ function roundEnd(room) {
   clearTimeout(room.timer); room.timer = null;
   const adder = byId(room, g.last.pid);
   g.gone += g.pile.length; g.pile = [];
-  if (adder.hand.length === 0) return endGame(room, adder);
-  setEvent(room, 'info', `Everyone passed — pile thrown away. ${adder.name} opens`);
-  setOpen(room, adder);
+  markOut(room, adder);                                    // their (last) play stood: safe if hand is empty
+  if (checkEnd(room)) return;
+  const opener = adder.hand.length ? adder : nextAfter(room, adder, null);
+  setEvent(room, 'info', `Everyone passed — pile thrown away. ${opener.name} opens`);
+  setOpen(room, opener);
 }
 
 function call(room, caller) {
@@ -124,16 +141,21 @@ function call(room, caller) {
   later(room, cfg.REVEAL_MS, () => {
     loser.hand.push(...g.pile); sortHand(loser.hand);
     g.pile = []; g.reveal = null;
-    if (adder.hand.length === 0) return endGame(room, adder);   // told the truth with their last cards
+    markOut(room, adder);                                  // told the truth with their last cards: safe
+    if (checkEnd(room)) return;
     setOpen(room, loser);
   });
 }
 
-function endGame(room, winner) {
+function endGame(room, loser) {
   const g = room.g;
   clearTimeout(room.timer); room.timer = null;
-  room.phase = 'over'; g.stage = 'over'; g.turn = null; g.winnerId = winner.id;
-  setEvent(room, 'over', `${winner.name} wins!`);
+  for (const q of room.players) markOut(room, q);          // anybody still unmarked with an empty hand
+  room.phase = 'over'; g.stage = 'over'; g.turn = null;
+  g.loserId = loser ? loser.id : null;
+  const first = room.players.find(q => q.place === 1);
+  g.winnerId = first ? first.id : null;
+  setEvent(room, 'over', loser ? `${loser.name} is left holding the cards — game over!` : 'Game over!');
 }
 
 function bestRank(hand) {
@@ -187,6 +209,7 @@ function action(room, p, m) {
     case 'add': {
       if (g.stage !== 'respond' || g.turn !== p.id) return 'It is not your turn.';
       const cards = Array.isArray(m.cards) ? m.cards.map(String) : [];
+      if (!room.players.some(q => q !== p && q.hand.length)) return 'Nobody is left to bluff — call or pass.';
       if (!validCards(p, cards, cfg.MAX_ADD)) return `Add 1 or ${cfg.MAX_ADD} cards from your hand.`;
       clearTimeout(room.timer); room.timer = null;
       add(room, p, cards);
@@ -219,8 +242,8 @@ function view(room, p) {
     last: g.last ? { id: g.last.id, pid: g.last.pid, n: g.last.n } : null,
     reveal: g.reveal,
     timer: playing && g.turn && (g.stage === 'open' || g.stage === 'respond') ? { pid: g.turn, ms: Math.max(0, g.turnUntil - Date.now()) } : null,
-    winnerId: g.winnerId, event: g.event,
-    seats: room.players.map(q => ({ id: q.id, count: q.hand.length })),
+    winnerId: g.winnerId, loserId: g.loserId, event: g.event,
+    seats: room.players.map(q => ({ id: q.id, count: q.hand.length, out: !!q.out, place: q.place || 0 })),
     you: { hand: p.hand, canCall: myTurn && g.stage === 'respond' && g.pile.length > 0, maxAdd: Math.min(cfg.MAX_ADD, p.hand.length), maxOpen: Math.min(cfg.MAX_OPEN, p.hand.length) },
   };
 }

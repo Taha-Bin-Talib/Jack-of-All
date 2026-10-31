@@ -3,7 +3,7 @@ import { Text, View, StyleSheet } from 'react-native';
 import { C } from '../theme';
 import { act } from '../net';
 import { Btn, Card, TimerBar, Toast, nameOf } from '../ui';
-import { DealFx, Fly, Geo, Hand, PileStack, Ring, Seat, useFlights } from '../table/Table';
+import { DealFx, Fly, Geo, Hand, PileStack, Ring, Seat, TurnArrow, useFlights } from '../table/Table';
 import type { RoomState } from '../types';
 
 const SUIT: Record<string, string> = { S: '♠', H: '♥', D: '♦', C: '♣' };
@@ -38,6 +38,7 @@ export default function Thulla({ room }: { room: RoomState }) {
         {geo => (
           <>
             <PileStack geo={geo} count={g.discarded > 0 ? g.discarded : 0} />
+            <TurnArrow geo={geo} i={geo.idx(g.turn || g.pick?.pid || g.consent?.targetId || '')} />
             {P.map((p, i) => {
               const sd = seat(p.id), play = g.plays.find((q: any) => q.pid === p.id);
               return (
@@ -45,7 +46,7 @@ export default function Thulla({ room }: { room: RoomState }) {
                   <Seat geo={geo} i={i} name={p.name} count={sd?.count} me={p.id === me} off={!p.connected} out={sd?.out}
                     active={g.turn === p.id || g.pick?.pid === p.id || g.consent?.targetId === p.id}
                     timerMs={g.timer && g.timer.pid === p.id ? g.timer.ms : null} />
-                  {play && <Fly key={play.card} from={geo.seat(i)} to={geo.slot(i)} w={geo.cw} id={play.card} back={false} duration={360} />}
+                  {play && <Fly key={play.card} from={geo.seat(i)} to={geo.slot(i)} w={geo.cw} id={play.card} back={false} duration={360} rot={Math.round(-Math.cos(geo.deg(i) * Math.PI / 180) * 22 + (i % 2 ? 6 : -6))} />}
                 </React.Fragment>
               );
             })}
@@ -89,7 +90,7 @@ export default function Thulla({ room }: { room: RoomState }) {
 }
 
 const st = StyleSheet.create({
-  hint: { color: C.text, fontSize: 13, textAlign: 'center', paddingHorizontal: 14, minHeight: 20, fontWeight: '600' },
+  hint: { color: '#fff', fontSize: 16, textAlign: 'center', paddingHorizontal: 14, minHeight: 24, fontWeight: '800' },
   panel: { marginHorizontal: 12, marginBottom: 6, padding: 12, borderRadius: 14, backgroundColor: 'rgba(0,0,0,.45)', borderWidth: 1, borderColor: C.gold },
   pT: { color: C.gold, fontWeight: '800', fontSize: 15, textAlign: 'center' },
   pS: { color: C.text, fontSize: 13, textAlign: 'center', marginVertical: 4 },

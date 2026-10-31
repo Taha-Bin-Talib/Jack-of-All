@@ -119,13 +119,44 @@ async function rules() {
     assert.strictEqual(r.g.stage, 'open'); assert.strictEqual(r.g.turn, q.id); assert.strictEqual(r.g.gone, 3);
     clearTimeout(r.timer);
   });
-  await t('empty hand without being called wins', async () => {
+  await t('empty hand uncalled = safe; game ends when only one player still has cards', async () => {
     const r = mkRoom('bluff', 3); bl.start(r); clearTimeout(r.timer);
     const p = r.players.find(x => x.id === r.g.turn);
     p.hand = ['14H'];
     bl.action(r, p, { a: 'open', rank: 14, cards: ['14H'] });
+    assert.strictEqual(r.phase, 'playing');
     for (let i = 0; i < 2; i++) { const x = r.players.find(y => y.id === r.g.turn); bl.action(r, x, { a: 'pass' }); }
-    assert.strictEqual(r.phase, 'over'); assert.strictEqual(r.g.winnerId, p.id);
+    assert.ok(p.out && p.place === 1);                      // p is safe
+    assert.strictEqual(r.phase, 'playing');                 // two players still hold cards
+    const q = r.players.find(x => x.id === r.g.turn); assert.notStrictEqual(q, p);
+    const other = r.players.find(x => x !== p && x !== q);
+    q.hand = ['3C']; other.hand = ['9D', '10D'];
+    bl.action(r, q, { a: 'open', rank: 3, cards: ['3C'] });
+    const o = r.players.find(x => x.id === r.g.turn); assert.strictEqual(o, other);
+    bl.action(r, o, { a: 'pass' });
+    assert.strictEqual(r.phase, 'over');
+    assert.strictEqual(r.g.loserId, other.id); assert.strictEqual(r.g.winnerId, p.id);
+  });
+  await t('last cards buried by the next player\'s add: safe at once', () => {
+    const r = mkRoom('bluff', 4); bl.start(r); clearTimeout(r.timer);
+    const p = r.players.find(x => x.id === r.g.turn);
+    p.hand = ['14H'];
+    bl.action(r, p, { a: 'open', rank: 14, cards: ['14H'] });
+    const q = r.players.find(x => x.id === r.g.turn);
+    assert.strictEqual(bl.action(r, q, { a: 'add', cards: [q.hand[0]] }), null);
+    assert.ok(p.out, 'opener with no cards is safe once someone adds');
+    assert.strictEqual(r.phase, 'playing');
+    clearTimeout(r.timer);
+  });
+  await t('called and honest with last cards: safe, caller picks up', async () => {
+    const r = mkRoom('bluff', 3); bl.start(r); clearTimeout(r.timer);
+    const p = r.players.find(x => x.id === r.g.turn);
+    p.hand = ['14H'];
+    bl.action(r, p, { a: 'open', rank: 14, cards: ['14H'] });
+    const q = r.players.find(x => x.id === r.g.turn);
+    bl.action(r, q, { a: 'call' }); await sleep(30);
+    assert.ok(p.out); assert.strictEqual(r.phase, 'playing'); assert.strictEqual(r.g.turn, q.id);
+    clearTimeout(r.timer);
   });
 
   console.log('Jack Thief'); const jt = games.get('jackthief');
@@ -219,7 +250,7 @@ async function sim() {
         assert.strictEqual(r.phase, 'over', 'game did not finish');
         if (g === 'thulla') assert.ok(r.g.loserId === null || r.players.find(p => p.id === r.g.loserId));
         if (g === 'jackthief') assert.ok(r.g.thiefId);
-        if (g === 'bluff') assert.ok(r.g.winnerId);
+        if (g === 'bluff') assert.ok(r.g.winnerId && r.g.loserId && r.players.filter(p => p.hand.length).length === 1);
       }
     });
   }

@@ -14,7 +14,7 @@ export const RULES: Record<string, { title: string; text: string[] }> = {
     'Then, one player at a time, the next player can: CALL BLUFF on the last play, ADD 1 or 2 more face-down cards to the pile (the claim grows, e.g. “3 Aces”), or PASS.',
     'If you call: the cards just played are shown. Caught lying → the player takes the whole pile. Told the truth → the caller takes the pile. The one who picks up the pile opens the next round.',
     'If everyone passes in a row, the pile is thrown away and the last player to add opens a new round.',
-    'The first player to get rid of all their cards without being caught wins.',
+    'If you get rid of all your cards without being caught, you are safe and out of the game. Play goes on until only one player still holds cards — that player loses.',
     'You have 1 minute per turn; if you run out of time you pass (or, when opening, honest cards are played).' ] },
   jackthief: { title: 'Jack Thief (2–10 players)', text: [
     'One random Jack is removed and ALL the other cards are dealt out.',

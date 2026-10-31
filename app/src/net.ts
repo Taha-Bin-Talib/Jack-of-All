@@ -4,14 +4,17 @@ import { DEFAULT_SERVER } from './config';
 import type { GameInfo, RoomState } from './types';
 
 export type Conn = 'connecting' | 'online' | 'offline';
-type Snap = { waking: boolean; warming: boolean; conn: Conn; room: RoomState | null; catalog: GameInfo[]; error: string | null; errSeq: number; server: string; ready: boolean };
+export type ChatMsg = { id: string; name: string; text: string; ts: number };
+type Snap = { chat: ChatMsg[]; waking: boolean; warming: boolean; conn: Conn; room: RoomState | null; catalog: GameInfo[]; error: string | null; errSeq: number; server: string; ready: boolean };
 
 const KEY = 'joa.session', SKEY = 'joa.server', NKEY = 'joa.name';
-let snap: Snap = { waking: false, warming: false, conn: 'offline', room: null, catalog: [], error: null, errSeq: 0, server: DEFAULT_SERVER, ready: false };
+let snap: Snap = { chat: [], waking: false, warming: false, conn: 'offline', room: null, catalog: [], error: null, errSeq: 0, server: DEFAULT_SERVER, ready: false };
 const subs = new Set<() => void>();
 let ws: WebSocket | null = null, session: { code: string; token: string } | null = null;
 let retry: any = null, ping: any = null, wanted = false, attempts = 0, deadline = 0;
 const pendingFirst: any[] = [];
+const reactSubs = new Set<(m: { pid: string; name: string; e: string }) => void>();
+export const onReact = (f: (m: { pid: string; name: string; e: string }) => void) => { reactSubs.add(f); return () => { reactSubs.delete(f); }; };
 
 function set(p: Partial<Snap>) { snap = { ...snap, ...p }; subs.forEach(f => f()); }
 export const useNet = () => { const [, f] = useState(0); useEffect(() => { const s = () => f(x => x + 1); subs.add(s); return () => { subs.delete(s); }; }, []); return snap; };
@@ -60,9 +63,12 @@ function connect() {
     let m: any; try { m = JSON.parse(String(e.data)); } catch { return; }
     if (m.t === 'joined') { session = { code: m.code, token: m.token }; persist(); set({ catalog: m.catalog }); }
     else if (m.t === 'state') set({ room: m.s });
+    else if (m.t === 'chatlog') set({ chat: m.log });
+    else if (m.t === 'chat') set({ chat: [...snap.chat, m.m].slice(-60) });
+    else if (m.t === 'react') reactSubs.forEach(f => f(m));
     else if (m.t === 'error') set({ error: m.m, errSeq: snap.errSeq + 1 });
     else if (m.t === 'gone' || m.t === 'left' || m.t === 'kicked') {
-      session = null; persist(); set({ room: null, error: m.t === 'kicked' ? 'You were removed from the room.' : m.t === 'gone' ? 'That room has ended.' : null, errSeq: snap.errSeq + 1 });
+      session = null; persist(); set({ room: null, chat: [], error: m.t === 'kicked' ? 'You were removed from the room.' : m.t === 'gone' ? 'That room has ended.' : null, errSeq: snap.errSeq + 1 });
       if (m.t !== 'gone' || true) { /* keep socket for next create/join */ }
     }
   };
@@ -91,5 +97,5 @@ export function send(m: any) {
   else if (m.t === 'create' || m.t === 'join') { pendingFirst.length = 0; pendingFirst.push(m); deadline = Date.now() + 100000; set({ waking: true }); connect(); }
 }
 export const act = (a: string, extra: any = {}) => send({ t: 'act', a, ...extra });
-export function leaveRoom() { send({ t: 'leave' }); session = null; persist(); set({ room: null }); }
+export function leaveRoom() { send({ t: 'leave' }); session = null; persist(); set({ room: null, chat: [] }); }
 export function reconnectNow() { if (!ws) connect(); }

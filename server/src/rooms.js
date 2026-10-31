@@ -5,6 +5,8 @@ const { send, roomView, broadcast } = require('./net');
 const games = require('./games');
 
 const ROOM_MAX = 10;
+const REACTIONS = ['😂', '😢', '😉', '😡', '😮', '👏', '🔥', '👍'];
+const chatLimited = p => { const n = Date.now(); if (p.lastChat && n - p.lastChat < 600) return true; p.lastChat = n; return false; };
 const rooms = new Map();
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
 
@@ -31,7 +33,7 @@ function createRoom(ws, m) {
   if (!name) return err(ws, 'Enter your name.');
   const engine = games.get(m.game);
   if (!engine) return err(ws, 'Pick a game.');
-  const room = { code: newCode(), players: [], phase: 'lobby', timer: null, gen: 0, g: null, lastActive: Date.now(), hostId: null };
+  const room = { code: newCode(), players: [], phase: 'lobby', timer: null, gen: 0, g: null, lastActive: Date.now(), hostId: null, chat: [] };
   setEngine(room, engine.id);
   rooms.set(room.code, room);
   addPlayer(ws, room, name);
@@ -43,6 +45,7 @@ function addPlayer(ws, room, name) {
   if (!room.hostId) room.hostId = p.id;
   ws.room = room; ws.pid = p.id;
   send(ws, { t: 'joined', token: p.token, code: room.code, id: p.id, catalog: games.catalog() });
+  send(ws, { t: 'chatlog', log: room.chat });
   broadcast(room);
 }
 
@@ -64,6 +67,7 @@ function rejoin(ws, m) {
   if (p.ws && p.ws !== ws) { p.ws.room = null; try { p.ws.close(); } catch (e) { /* ignore */ } }
   p.ws = ws; p.connected = true; ws.room = room; ws.pid = p.id;
   send(ws, { t: 'joined', token: p.token, code: room.code, id: p.id, catalog: games.catalog() });
+  send(ws, { t: 'chatlog', log: room.chat });
   if (room.phase === 'playing') room.engine.onPresence && room.engine.onPresence(room, p);
   broadcast(room);
 }
@@ -117,6 +121,20 @@ function handle(ws, m) {
   if (!room || !p) return err(ws, 'You are not in a room.');
   const host = room.hostId === p.id;
   switch (m.t) {
+    case 'chat': {
+      const text = String(m.text || '').replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, 120);
+      if (!text || chatLimited(p)) return;
+      const msg = { id: p.id, name: p.name, text, ts: Date.now() };
+      room.chat.push(msg); if (room.chat.length > 60) room.chat.shift();
+      room.lastActive = Date.now();
+      for (const q of room.players) if (q.ws) send(q.ws, { t: 'chat', m: msg });
+      return;
+    }
+    case 'react': {
+      if (!REACTIONS.includes(m.e) || chatLimited(p)) return;
+      for (const q of room.players) if (q.ws) send(q.ws, { t: 'react', pid: p.id, name: p.name, e: m.e });
+      return;
+    }
     case 'setGame': {
       if (!host || room.phase !== 'lobby') return err(ws, 'Only the host can change the game in the lobby.');
       const e = games.get(m.game);
