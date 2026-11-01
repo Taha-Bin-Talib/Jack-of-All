@@ -41,6 +41,8 @@ export function GameTable({ players, meId, tone = 'thulla', children }: { player
       <>
         <View style={{ position: 'absolute', left: cx - FELT.x * u - rim, top: cy - FELT.y * u - rim, width: 2 * FELT.x * u + 2 * rim, height: 2 * FELT.y * u + 2 * rim, borderRadius: 999, backgroundColor: t.rim, borderWidth: borders.hair, borderColor: t.line, shadowColor: '#000', shadowOpacity: 0.5, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6 }} />
         <View style={{ position: 'absolute', left: cx - FELT.x * u, top: cy - FELT.y * u, width: 2 * FELT.x * u, height: 2 * FELT.y * u, borderRadius: 999, backgroundColor: t.felt, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}>
+          {/* soft light over the middle of the cloth: stacked ovals, strongest at the centre */}
+          {[0.96, 0.86, 0.76, 0.66, 0.56, 0.46, 0.36, 0.26].map(k => <View key={k} pointerEvents="none" style={{ position: 'absolute', width: k * 2 * FELT.x * u, height: k * 2 * FELT.y * u, borderRadius: 999, backgroundColor: 'rgba(196,240,214,0.03)' }} />)}
           <View style={{ position: 'absolute', width: 1.5 * FELT.x * u, height: 1.5 * FELT.y * u, borderRadius: 999, borderWidth: borders.hair, borderColor: 'rgba(241,232,213,0.10)' }} />
           <View style={{ position: 'absolute', width: 0.8 * FELT.x * u, height: 0.8 * FELT.y * u, borderRadius: 999, borderWidth: borders.hair, borderColor: 'rgba(241,232,213,0.08)' }} />
         </View>

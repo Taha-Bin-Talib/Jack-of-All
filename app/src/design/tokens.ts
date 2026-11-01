@@ -21,9 +21,9 @@ export const colors = {
   onGold: '#142D26',                      // text on gold fills
   onOxblood: '#F1E8D5',
   // card table
-  table: { felt: '#1F4D3B', feltDeep: '#17402F', wood: '#3A2E22', woodLine: '#6B5A3F', oxbloodRim: '#5C2229', ivoryRim: '#B9AE92', good: '#8FB58A', bad: '#D9A3A8' },
+  table: { felt: '#2A6A50', feltDeep: '#225A43', wood: '#3A2E22', woodLine: '#6B5A3F', oxbloodRim: '#5C2229', ivoryRim: '#B9AE92', good: '#8FB58A', bad: '#D9A3A8' },
   // playing cards
-  card: { face: '#F6EFDD', ink: '#1F2220', red: '#762F36', edge: '#CFC4A8', back: '#762F36', backLine: '#BD9857' },
+  card: { face: '#FCF7EA', ink: '#1F2220', red: '#762F36', edge: '#D6CCB0', back: '#86363F', backLine: '#BD9857' },
 } as const;
 
 /* 4-pt spacing scale */
