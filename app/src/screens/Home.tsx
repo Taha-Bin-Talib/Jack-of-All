@@ -4,18 +4,20 @@ import { C } from '../theme';
 import { Btn, Suit } from '../ui';
 import { getSnap, playOffline, saveName, savedName, send, setServer, useNet } from '../net';
 import { RULES } from '../rules';
+import DesignPreview from '../design/preview/DesignPreview';
 
 const GAMES = [{ id: 'thulla', name: 'Bhabhi Thulla', sub: '3–8 players' }, { id: 'bluff', name: 'Bluff', sub: '3–10 players' }, { id: 'jackthief', name: 'Jack Thief', sub: '2–10 players' }];
 
 export default function Home() {
   const net = useNet();
   const [name, setName] = React.useState(''), [code, setCode] = React.useState('');
-  const [game, setGame] = React.useState('thulla'), [mode, setMode] = React.useState<'home' | 'rules' | 'server'>('home');
+  const [game, setGame] = React.useState('thulla'), [mode, setMode] = React.useState<'home' | 'rules' | 'server' | 'design'>('home');
   const [url, setUrl] = React.useState(getSnap().server), [busy, setBusy] = React.useState(false);
   React.useEffect(() => { savedName().then(n => n && setName(n)); }, []);
   React.useEffect(() => { setBusy(false); }, [net.errSeq, net.room]);
   const go = (m: any) => { if (!name.trim()) return; saveName(name.trim()); setBusy(true); send({ ...m, name: name.trim() }); };
 
+  if (mode === 'design') return <DesignPreview onBack={() => setMode('home')} />;
   if (mode === 'rules') return (
     <ScrollView contentContainerStyle={{ padding: 20 }}>
       {Object.values(RULES).map(r => (
@@ -66,6 +68,7 @@ export default function Home() {
         {net.error ? <Text style={s.err}>{net.error}</Text> : null}
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 26 }}>
           <Text style={s.link} onPress={() => setMode('rules')}>How to play</Text>
+          <Text style={s.link} onPress={() => setMode('design')}>Design</Text>
           <Text style={s.link} onPress={() => setMode('server')}>Server</Text>
         </View>
         <Text style={[s.p, { textAlign: 'center', marginTop: 14 }]}>{net.conn === 'online' ? '● connected' : net.conn === 'connecting' ? '○ connecting…' : '○ not connected yet'}</Text>

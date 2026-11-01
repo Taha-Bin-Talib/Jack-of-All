@@ -12,12 +12,14 @@ import Jack from './src/screens/Jack';
 import { Header, Overlay } from './src/screens/Common';
 import { nameOf } from './src/ui';
 import Chat from './src/Chat';
+import { useAppFonts } from './src/design';
 
 function GameKeepAwake() { useKeepAwake(); return null; }
 
 function Root() {
   const net = useNet();
   const insets = useSafeAreaInsets();
+  const fontsReady = useAppFonts();
   const room = net.room;
   React.useEffect(() => { boot(); }, []);
   const confirmLeave = React.useCallback(() => {
@@ -30,7 +32,7 @@ function Root() {
   }, [room, confirmLeave]);
 
   let body: React.ReactNode;
-  if (!net.ready) body = null;
+  if (!net.ready || !fontsReady) body = null;
   else if (!room) body = <Home />;
   else if (room.phase === 'lobby') body = <Lobby />;
   else {

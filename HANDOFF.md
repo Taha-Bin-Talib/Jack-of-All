@@ -47,6 +47,14 @@ Turn timers 60 s; disconnected players are auto-played after BOT_MS (3 s).
 Website-style table: circular green felt ring in the middle, players seated around it (viewer at bottom), gold ▲ turn arrow, countdown timers, hand as a flat wrapped grid at the bottom, deal/play animations, floating chat button with reactions.
 Cards: white face, rank horizontal + small suit top-left, one big centre suit, rank+suit rotated 180° bottom-right. Suits are SVG (`Suit` in ui.tsx) because some Android fonts render ♠/♥ text as emoji. Tiny cards (<40 px, thrown pile) show rank over small suit.
 
+## Design system (Stage 1 — new, additive; old screens not yet migrated)
+`app/src/design/` — import everything from `'../design'`:
+- `tokens.ts` colours (#142D26 bg, #203D32 bgAlt, #252825 surface, #F1E8D5 text, #C9BFA9 textMuted, #BD9857 gold, #762F36 oxblood), spacing (4-pt), radii, borders, shadows, elevation (z layers), sizes (buttons/avatars/header/gutter), cardSizes, durations.
+- `typography.ts` Playfair Display (display/headings) + DM Sans (UI); `type` variants: display,h1,h2,title,body,bodySm,label,caption,button. One font family per weight — never use fontWeight with them. `fonts.ts` `useAppFonts()` (loaded in App.tsx via expo-font + @expo-google-fonts).
+- `components/`: AppText, PrimaryButton, SecondaryButton, IconButton, ScreenContainer (safe-area; pass safe={false} inside the current App root, which already pads), AppHeader, SectionHeading, PlayerAvatar, PlayingCard (ivory face, oxblood/ink suits), GameTile, icons.
+- `preview/DesignPreview.tsx` — style guide, opened from the Home screen footer link "Design".
+- Old `src/theme.ts` (`C`) and `src/ui.tsx` still drive the existing screens; later stages migrate them to the design system.
+
 ## Play now (offline vs 3 bots)
 Home screen button "Play now — offline vs 3 bots" starts the selected game with the user + Bot Ali/Sara/Zain (4 players, no internet). Implemented in `net.ts` (`playOffline`, `localAct`, `stopLocal`): the copied server engine and `rooms.js` run inside the app, the human gets a fake ws object, bots are players with `connected:false` (the engines' existing auto-play for disconnected players, BOT_MS tuned to ~1.2–1.8 s). `net.local` flag hides chat/reconnect banner; rematch restarts immediately with the same bots.
 
