@@ -21,9 +21,9 @@ function Root() {
   const room = net.room;
   React.useEffect(() => { boot(); }, []);
   const confirmLeave = React.useCallback(() => {
-    Alert.alert('Leave room?', room?.phase === 'playing' ? 'The game goes on without you (a bot plays your cards).' : 'You will leave this room.', [
+    Alert.alert('Leave room?', net.local ? 'This practice game will end.' : room?.phase === 'playing' ? 'The game goes on without you (a bot plays your cards).' : 'You will leave this room.', [
       { text: 'Stay', style: 'cancel' }, { text: 'Leave', style: 'destructive', onPress: leaveRoom }]);
-  }, [room?.phase]);
+  }, [room?.phase, net.local]);
   React.useEffect(() => {
     const h = BackHandler.addEventListener('hardwareBackPress', () => { if (room) { confirmLeave(); return true; } return false; });
     return () => h.remove();
@@ -44,18 +44,18 @@ function Root() {
     body = (
       <View style={{ flex: 1 }}>
         <GameKeepAwake />
-        <Header room={room} onLeave={confirmLeave} />
+        <Header room={room} local={net.local} onLeave={confirmLeave} />
         {room.game === 'thulla' ? <Thulla room={room} /> : room.game === 'bluff' ? <Bluff room={room} /> : <Jack room={room} />}
-        {over && <Overlay title={over.title} lines={over.lines} host={host} onAgain={() => send({ t: 'rematch' })} onLeave={leaveRoom} />}
+        {over && <Overlay title={over.title} lines={over.lines} host={host} local={net.local} onAgain={() => send({ t: 'rematch' })} onLeave={leaveRoom} />}
       </View>
     );
   }
   return (
     <View style={[st.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <StatusBar barStyle="light-content" />
-      {room && net.conn !== 'online' && <Text style={st.banner} onPress={reconnectNow}>Reconnecting… tap to retry</Text>}
+      {room && !net.local && net.conn !== 'online' && <Text style={st.banner} onPress={reconnectNow}>Reconnecting… tap to retry</Text>}
       {body}
-      {room && net.ready && <Chat />}
+      {room && net.ready && !net.local && <Chat />}
     </View>
   );
 }

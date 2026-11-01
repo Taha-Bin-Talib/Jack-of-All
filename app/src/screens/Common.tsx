@@ -4,25 +4,25 @@ import { C } from '../theme';
 import { Btn } from '../ui';
 import type { RoomState } from '../types';
 
-export function Header({ room, onLeave }: { room: RoomState; onLeave: () => void }) {
+export function Header({ room, onLeave, local }: { room: RoomState; onLeave: () => void; local?: boolean }) {
   const g = room.g;
   const extra = room.game === 'thulla' && g ? <> · Trick <Text style={s.b}>{g.trickNo}</Text></> : <> · <Text style={s.b}>{room.gameName}</Text></>;
   return (
     <View style={s.head}>
-      <Text style={s.headT}>Room <Text style={s.b}>{room.code}</Text>{extra}</Text>
+      <Text style={s.headT}>{local ? <Text style={s.b}>Play now</Text> : <>Room <Text style={s.b}>{room.code}</Text></>}{extra}</Text>
       <Pressable onPress={onLeave} style={s.leaveBtn}><Text style={s.leave}>Leave</Text></Pressable>
     </View>
   );
 }
 
-export function Overlay({ title, lines, host, onAgain, onLeave }: { title: string; lines?: string[]; host: boolean; onAgain: () => void; onLeave: () => void }) {
+export function Overlay({ title, lines, host, onAgain, onLeave, local }: { title: string; lines?: string[]; host: boolean; onAgain: () => void; onLeave: () => void; local?: boolean }) {
   return (
     <View style={s.over}>
       <View style={s.overBox}>
         <Text style={s.overT}>{title}</Text>
         {lines?.map((l, i) => <Text key={i} style={s.overL}>{l}</Text>)}
-        {host ? <Btn title="Back to lobby" onPress={onAgain} style={{ marginTop: 14, alignSelf: 'stretch' }} /> : <Text style={[s.overL, { marginTop: 12 }]}>Waiting for the host…</Text>}
-        <Btn title="Leave room" kind="ghost" onPress={onLeave} style={{ marginTop: 10, alignSelf: 'stretch' }} />
+        {host ? <Btn title={local ? 'Play again' : 'Back to lobby'} onPress={onAgain} style={{ marginTop: 14, alignSelf: 'stretch' }} /> : <Text style={[s.overL, { marginTop: 12 }]}>Waiting for the host…</Text>}
+        <Btn title={local ? 'Back to home' : 'Leave room'} kind="ghost" onPress={onLeave} style={{ marginTop: 10, alignSelf: 'stretch' }} />
       </View>
     </View>
   );

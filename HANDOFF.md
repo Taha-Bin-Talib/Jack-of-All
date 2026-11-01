@@ -26,7 +26,8 @@ server/src/cards.js        deck helpers (card id like "14H" = rank+suit; J=11 Q=
 server/src/games/{thulla,bluff,jackthief,index}.js
 server/test/run-all.js     25 tests (rules + bot simulations with card-conservation); test/ws-smoke.js
 app/App.tsx                screen routing, <Chat/> when in a room, game-over overlay
-app/src/net.ts             connection layer (warmUp() ping of /healthz, retries first create/join ~100 s, rejoin, act/send)
+app/src/engine/           AUTO-COPY of server/src (cards, net, rooms, games) + a crypto shim, made by `node app/scripts/sync-engine.js`. Re-run it after ANY change in server/src, then commit both.
+app/src/net.ts             connection layer (also hosts offline mode: playOffline() runs the engine in-app with 3 bots) (warmUp() ping of /healthz, retries first create/join ~100 s, rejoin, act/send)
 app/src/ui.tsx             Card, Suit (SVG), Btn, TimerBar, Toast, helpers
 app/src/table/Table.tsx    Ring (circular table), Seat, TurnArrow, Fly/useFlights, DealFx, PileStack, Hand
 app/src/Chat.tsx           floating 💬 button, chat panel, reactions that float up
@@ -46,7 +47,11 @@ Turn timers 60 s; disconnected players are auto-played after BOT_MS (3 s).
 Website-style table: circular green felt ring in the middle, players seated around it (viewer at bottom), gold ▲ turn arrow, countdown timers, hand as a flat wrapped grid at the bottom, deal/play animations, floating chat button with reactions.
 Cards: white face, rank horizontal + small suit top-left, one big centre suit, rank+suit rotated 180° bottom-right. Suits are SVG (`Suit` in ui.tsx) because some Android fonts render ♠/♥ text as emoji. Tiny cards (<40 px, thrown pile) show rank over small suit.
 
+## Play now (offline vs 3 bots)
+Home screen button "Play now — offline vs 3 bots" starts the selected game with the user + Bot Ali/Sara/Zain (4 players, no internet). Implemented in `net.ts` (`playOffline`, `localAct`, `stopLocal`): the copied server engine and `rooms.js` run inside the app, the human gets a fake ws object, bots are players with `connected:false` (the engines' existing auto-play for disconnected players, BOT_MS tuned to ~1.2–1.8 s). `net.local` flag hides chat/reconnect banner; rematch restarts immediately with the same bots.
+
 ## Commit history (newest first)
+- (this change) Play now offline mode
 - `0f9b6d7` Jack Thief: show the card you picked; drawer throws the pair themselves
 - `057d0d5` Redraw cards: vector suits, horizontal rank corners, one big centre suit (all 3 games)
 - `a7368e5` Website-style table UI for all games, new card layout, chat+reactions, clearer Bluff opening, Bluff ends when one player is left with cards

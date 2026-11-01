@@ -2,7 +2,7 @@ import React from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, View, StyleSheet } from 'react-native';
 import { C } from '../theme';
 import { Btn, Suit } from '../ui';
-import { getSnap, saveName, savedName, send, setServer, useNet } from '../net';
+import { getSnap, playOffline, saveName, savedName, send, setServer, useNet } from '../net';
 import { RULES } from '../rules';
 
 const GAMES = [{ id: 'thulla', name: 'Bhabhi Thulla', sub: '3–8 players' }, { id: 'bluff', name: 'Bluff', sub: '3–10 players' }, { id: 'jackthief', name: 'Jack Thief', sub: '2–10 players' }];
@@ -43,10 +43,13 @@ export default function Home() {
         <Text style={s.tag}>Play cards with friends online</Text>
         <TextInput value={name} onChangeText={setName} placeholder="Your name" placeholderTextColor={C.dim} maxLength={14} style={s.input} />
 
-        <Text style={s.h2}>Host a room</Text>
+        <Text style={s.h2}>Pick a game</Text>
         {GAMES.map(g => (
           <Btn key={g.id} title={`${g.name}  ·  ${g.sub}`} kind={game === g.id ? 'gold' : 'ghost'} style={{ marginBottom: 8 }} onPress={() => setGame(g.id)} />
         ))}
+        <Btn title="▶  Play now — offline vs 3 bots" disabled={!name.trim()} style={{ marginBottom: 6, marginTop: 4 }} onPress={() => { saveName(name.trim()); playOffline(game, name.trim()); }} />
+        <Text style={[s.p, { textAlign: 'center', marginBottom: 14 }]}>No internet needed — you and 3 computer players.</Text>
+        <Text style={s.h2}>Host a room</Text>
         <Btn title="Create room" kind="green" disabled={!name.trim() || busy} onPress={() => go({ t: 'create', game })} />
 
         <Text style={[s.h2, { marginTop: 22 }]}>Join a friend</Text>

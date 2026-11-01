@@ -5,10 +5,10 @@ import type { GameInfo, RoomState } from './types';
 
 export type Conn = 'connecting' | 'online' | 'offline';
 export type ChatMsg = { id: string; name: string; text: string; ts: number };
-type Snap = { chat: ChatMsg[]; waking: boolean; warming: boolean; conn: Conn; room: RoomState | null; catalog: GameInfo[]; error: string | null; errSeq: number; server: string; ready: boolean };
+type Snap = { local: boolean; chat: ChatMsg[]; waking: boolean; warming: boolean; conn: Conn; room: RoomState | null; catalog: GameInfo[]; error: string | null; errSeq: number; server: string; ready: boolean };
 
 const KEY = 'joa.session', SKEY = 'joa.server', NKEY = 'joa.name';
-let snap: Snap = { chat: [], waking: false, warming: false, conn: 'offline', room: null, catalog: [], error: null, errSeq: 0, server: DEFAULT_SERVER, ready: false };
+let snap: Snap = { local: false, chat: [], waking: false, warming: false, conn: 'offline', room: null, catalog: [], error: null, errSeq: 0, server: DEFAULT_SERVER, ready: false };
 const subs = new Set<() => void>();
 let ws: WebSocket | null = null, session: { code: string; token: string } | null = null;
 let retry: any = null, ping: any = null, wanted = false, attempts = 0, deadline = 0;
@@ -59,21 +59,56 @@ function connect() {
     else while (pendingFirst.length) w.send(JSON.stringify(pendingFirst.shift()));
     clearInterval(ping); ping = setInterval(() => { try { w.send('{"t":"ping"}'); } catch {} }, 20000);
   };
-  w.onmessage = e => {
-    let m: any; try { m = JSON.parse(String(e.data)); } catch { return; }
-    if (m.t === 'joined') { session = { code: m.code, token: m.token }; persist(); set({ catalog: m.catalog }); }
-    else if (m.t === 'state') set({ room: m.s });
-    else if (m.t === 'chatlog') set({ chat: m.log });
-    else if (m.t === 'chat') set({ chat: [...snap.chat, m.m].slice(-60) });
-    else if (m.t === 'react') reactSubs.forEach(f => f(m));
-    else if (m.t === 'error') set({ error: m.m, errSeq: snap.errSeq + 1 });
-    else if (m.t === 'gone' || m.t === 'left' || m.t === 'kicked') {
-      session = null; persist(); set({ room: null, chat: [], error: m.t === 'kicked' ? 'You were removed from the room.' : m.t === 'gone' ? 'That room has ended.' : null, errSeq: snap.errSeq + 1 });
-      if (m.t !== 'gone' || true) { /* keep socket for next create/join */ }
-    }
-  };
+  w.onmessage = e => { let m: any; try { m = JSON.parse(String(e.data)); } catch { return; } onMsg(m); };
   w.onclose = () => { clearInterval(ping); ws = null; if (wanted) fail(); };
   w.onerror = () => {};
+}
+function onMsg(m: any) {
+  if (m.t === 'joined') { if (!snap.local) { session = { code: m.code, token: m.token }; persist(); } set({ catalog: m.catalog }); }
+  else if (m.t === 'state') set({ room: snap.local ? { ...m.s, players: m.s.players.map((p: any) => ({ ...p, connected: true })) } : m.s });
+  else if (m.t === 'chatlog') set({ chat: m.log });
+  else if (m.t === 'chat') set({ chat: [...snap.chat, m.m].slice(-60) });
+  else if (m.t === 'react') reactSubs.forEach(f => f(m));
+  else if (m.t === 'error') set({ error: m.m, errSeq: snap.errSeq + 1 });
+  else if (m.t === 'gone' || m.t === 'left' || m.t === 'kicked') {
+    session = null; persist(); set({ room: null, chat: [], error: m.t === 'kicked' ? 'You were removed from the room.' : m.t === 'gone' ? 'That room has ended.' : null, errSeq: snap.errSeq + 1 });
+  }
+}
+
+/* ---------- offline "Play now": the same game engine runs inside the app, with 3 bots ---------- */
+let L: { rooms: any; games: any; ws: any; room: any } | null = null;
+const BOTS = ['Bot Ali', 'Bot Sara', 'Bot Zain'];
+export function playOffline(game: string, name: string) {
+  stopLocal();
+  const rooms = require('./engine/rooms'), games = require('./engine/games'), net = require('./engine/net');
+  const eng = games.get(game);
+  if (eng && eng.cfg) eng.cfg.BOT_MS = game === 'jackthief' ? 1200 : game === 'bluff' ? 1800 : 1400;   // bots move at a friendly pace
+  const ws: any = { readyState: 1, room: null, pid: null, send: (str: string) => { try { onMsg(JSON.parse(str)); } catch {} } };
+  set({ local: true, chat: [], error: null, room: null });
+  rooms.handle(ws, { t: 'create', name, game });
+  const room = ws.room;
+  if (!room) { set({ local: false }); return; }
+  BOTS.forEach((n, i) => room.players.push({ id: 'bot' + i, token: 'bot' + i, name: n, ws: null, connected: false, hand: [], out: false, place: 0 }));
+  L = { rooms, games, ws, room };
+  room.engine.start(room);
+  net.broadcast(room);
+}
+function stopLocal() {
+  if (!L) { if (snap.local) set({ local: false }); return; }
+  const r = L.room; clearTimeout(r.timer); r.timer = null; r.gen++; r.phase = 'lobby'; L = null;
+  set({ local: false, room: null, chat: [] });
+}
+function localAct(m: any) {
+  if (!L) return;
+  const { room, ws, rooms } = L;
+  if (m.t === 'leave') { stopLocal(); return; }
+  if (m.t === 'rematch') {            // straight into a new game with the same bots
+    if (room.phase !== 'over') return;
+    room.engine.reset(room); room.phase = 'lobby'; room.g = null;
+    room.engine.start(room); require('./engine/net').broadcast(room);
+    return;
+  }
+  rooms.handle(ws, m);
 }
 function fail() {
   attempts++;
@@ -93,9 +128,10 @@ function fail() {
 }
 
 export function send(m: any) {
+  if (snap.local) return localAct(m);
   if (ws && ws.readyState === 1) ws.send(JSON.stringify(m));
   else if (m.t === 'create' || m.t === 'join') { pendingFirst.length = 0; pendingFirst.push(m); deadline = Date.now() + 100000; set({ waking: true }); connect(); }
 }
 export const act = (a: string, extra: any = {}) => send({ t: 'act', a, ...extra });
-export function leaveRoom() { send({ t: 'leave' }); session = null; persist(); set({ room: null, chat: [] }); }
+export function leaveRoom() { if (snap.local) return stopLocal(); send({ t: 'leave' }); session = null; persist(); set({ room: null, chat: [] }); }
 export function reconnectNow() { if (!ws) connect(); }
