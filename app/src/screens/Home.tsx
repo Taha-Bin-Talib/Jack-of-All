@@ -1,90 +1,51 @@
 import React from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, View, StyleSheet } from 'react-native';
-import { C } from '../theme';
-import { Btn, Suit } from '../ui';
-import { getSnap, playOffline, saveName, savedName, send, setServer, useNet } from '../net';
-import { RULES } from '../rules';
+import { BackHandler } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSnap, playOffline, saveName, savedName, send, useNet } from '../net';
 import DesignPreview from '../design/preview/DesignPreview';
+import { GAME_IDS, GameId } from '../games';
+import HomeMain from './home/HomeMain';
+import GamesList from './home/GamesList';
+import GameInfo from './home/GameInfo';
+import Profile from './home/Profile';
+import { Rules, Server, Settings } from './home/Settings';
+import type { Ctx, Route } from './home/types';
 
-const GAMES = [{ id: 'thulla', name: 'Bhabhi Thulla', sub: '3–8 players' }, { id: 'bluff', name: 'Bluff', sub: '3–10 players' }, { id: 'jackthief', name: 'Jack Thief', sub: '2–10 players' }];
+const LAST = 'joa.lastGame';
 
+/* Home shell: a small route stack (Home → Games → Game info, Profile, Settings …) with Android back support.
+   Networking and game logic are untouched — create/join/offline all go through ../net. */
 export default function Home() {
   const net = useNet();
-  const [name, setName] = React.useState(''), [code, setCode] = React.useState('');
-  const [game, setGame] = React.useState('thulla'), [mode, setMode] = React.useState<'home' | 'rules' | 'server' | 'design'>('home');
-  const [url, setUrl] = React.useState(getSnap().server), [busy, setBusy] = React.useState(false);
-  React.useEffect(() => { savedName().then(n => n && setName(n)); }, []);
+  const [stack, setStack] = React.useState<Route[]>([{ k: 'home' }]);
+  const [name, setName] = React.useState(''), [lastGame, setLast] = React.useState<GameId>('thulla'), [busy, setBusy] = React.useState(false);
+  React.useEffect(() => { savedName().then(n => n && setName(n)); AsyncStorage.getItem(LAST).then(g => { if (g && (GAME_IDS as string[]).includes(g)) setLast(g as GameId); }).catch(() => {}); }, []);
   React.useEffect(() => { setBusy(false); }, [net.errSeq, net.room]);
-  const go = (m: any) => { if (!name.trim()) return; saveName(name.trim()); setBusy(true); send({ ...m, name: name.trim() }); };
 
-  if (mode === 'design') return <DesignPreview onBack={() => setMode('home')} />;
-  if (mode === 'rules') return (
-    <ScrollView contentContainerStyle={{ padding: 20 }}>
-      {Object.values(RULES).map(r => (
-        <View key={r.title} style={{ marginBottom: 18 }}>
-          <Text style={s.h2}>{r.title}</Text>
-          {r.text.map((t, i) => <Text key={i} style={s.p}>• {t}</Text>)}
-        </View>
-      ))}
-      <Btn title="Back" kind="ghost" onPress={() => setMode('home')} />
-    </ScrollView>
-  );
-  if (mode === 'server') return (
-    <View style={{ padding: 20 }}>
-      <Text style={s.h2}>Server address</Text>
-      <Text style={s.p}>Normally you never need to change this. Use wss://your-server for a hosted server.</Text>
-      <TextInput value={url} onChangeText={setUrl} autoCapitalize="none" autoCorrect={false} style={s.input} placeholderTextColor={C.dim} />
-      <Btn title="Save" onPress={() => { setServer(url); setMode('home'); }} />
-      <Btn title="Back" kind="ghost" style={{ marginTop: 10 }} onPress={() => setMode('home')} />
-    </View>
-  );
-  return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-      <ScrollView contentContainerStyle={{ padding: 20 }} keyboardShouldPersistTaps="handled">
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 20 }}><Suit s="S" size={30} color="#16181d" /><Text style={[s.logo, { marginTop: 0 }]}>Jack of All</Text><Suit s="H" size={30} color="#c0262d" /></View>
-        <Text style={s.tag}>Play cards with friends online</Text>
-        <TextInput value={name} onChangeText={setName} placeholder="Your name" placeholderTextColor={C.dim} maxLength={14} style={s.input} />
+  const pop = React.useCallback(() => setStack(s => (s.length > 1 ? s.slice(0, -1) : s)), []);
+  React.useEffect(() => {
+    const h = BackHandler.addEventListener('hardwareBackPress', () => { if (stack.length > 1) { pop(); return true; } return false; });
+    return () => h.remove();
+  }, [stack.length, pop]);
 
-        <Text style={s.h2}>Pick a game</Text>
-        {GAMES.map(g => (
-          <Btn key={g.id} title={`${g.name}  ·  ${g.sub}`} kind={game === g.id ? 'gold' : 'ghost'} style={{ marginBottom: 8 }} onPress={() => setGame(g.id)} />
-        ))}
-        <Btn title="▶  Play now — offline vs 3 bots" disabled={!name.trim()} style={{ marginBottom: 6, marginTop: 4 }} onPress={() => { saveName(name.trim()); playOffline(game, name.trim()); }} />
-        <Text style={[s.p, { textAlign: 'center', marginBottom: 14 }]}>No internet needed — you and 3 computer players.</Text>
-        <Text style={s.h2}>Host a room</Text>
-        <Btn title="Create room" kind="green" disabled={!name.trim() || busy} onPress={() => go({ t: 'create', game })} />
-
-        <Text style={[s.h2, { marginTop: 22 }]}>Join a friend</Text>
-        <TextInput value={code} onChangeText={t => setCode(t.toUpperCase())} placeholder="Room code" placeholderTextColor={C.dim} autoCapitalize="characters" maxLength={4} style={[s.input, { textAlign: 'center', letterSpacing: 6, fontSize: 24 }]} />
-        <Btn title="Join room" disabled={!name.trim() || code.length !== 4 || busy} onPress={() => go({ t: 'join', code })} />
-
-        {busy && (
-          <View style={s.wait}>
-            <ActivityIndicator color={C.gold} />
-            <Text style={s.waitT}>{net.conn === 'online' ? 'Almost there…' : 'Please wait — it can take up to 30–60 seconds to host while the server wakes up. Keep the app open.'}</Text>
-          </View>
-        )}
-        {!busy && net.warming && net.conn !== 'online' && <Text style={[s.p, { textAlign: 'center', marginTop: 12 }]}>⏳ Waking up the server… this can take up to 30–60 seconds the first time.</Text>}
-        {net.error ? <Text style={s.err}>{net.error}</Text> : null}
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 26 }}>
-          <Text style={s.link} onPress={() => setMode('rules')}>How to play</Text>
-          <Text style={s.link} onPress={() => setMode('design')}>Design</Text>
-          <Text style={s.link} onPress={() => setMode('server')}>Server</Text>
-        </View>
-        <Text style={[s.p, { textAlign: 'center', marginTop: 14 }]}>{net.conn === 'online' ? '● connected' : net.conn === 'connecting' ? '○ connecting…' : '○ not connected yet'}</Text>
-      </ScrollView>
-    </KeyboardAvoidingView>
-  );
+  const remember = (g: GameId) => { setLast(g); AsyncStorage.setItem(LAST, g).catch(() => {}); };
+  const c: Ctx = {
+    nav: { push: r => setStack(s => [...s, r]), pop, reset: () => setStack([{ k: 'home' }]) },
+    name, busy, lastGame,
+    saveProfile: n => { setName(n); saveName(n); },
+    playOffline: g => { remember(g); playOffline(g, name.trim() || 'You'); },
+    create: g => { remember(g); saveName(name.trim()); setBusy(true); send({ t: 'create', game: g, name: name.trim() }); },
+    join: code => { saveName(name.trim()); setBusy(true); send({ t: 'join', code, name: name.trim() }); },
+  };
+  const r = stack[stack.length - 1];
+  switch (r.k) {
+    case 'games': return <GamesList c={c} />;
+    case 'game': return <GameInfo key={r.id} c={c} id={r.id} />;
+    case 'profile': return <Profile c={c} hint={r.hint} />;
+    case 'settings': return <Settings c={c} />;
+    case 'rules': return <Rules c={c} />;
+    case 'server': return <Server c={c} />;
+    case 'design': return <DesignPreview onBack={pop} />;
+    default: return <HomeMain c={c} />;
+  }
 }
-
-const s = StyleSheet.create({
-  logo: { color: C.gold, fontSize: 32, fontWeight: '900', textAlign: 'center', marginTop: 20 },
-  tag: { color: C.dim, textAlign: 'center', marginBottom: 20 },
-  h2: { color: C.text, fontSize: 18, fontWeight: '800', marginBottom: 10, marginTop: 6 },
-  p: { color: C.dim, fontSize: 14, lineHeight: 20, marginBottom: 6 },
-  input: { backgroundColor: 'rgba(0,0,0,.35)', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,.2)', color: C.text, paddingHorizontal: 14, paddingVertical: 12, fontSize: 17, marginBottom: 14 },
-  err: { color: C.danger, textAlign: 'center', marginTop: 12 },
-  wait: { flexDirection: 'row', gap: 10, alignItems: 'center', backgroundColor: 'rgba(242,193,78,.15)', borderColor: C.gold, borderWidth: 1, borderRadius: 12, padding: 12, marginTop: 14 },
-  waitT: { color: C.text, flex: 1, fontSize: 14, lineHeight: 19 },
-  link: { color: C.gold, fontWeight: '700', fontSize: 15 },
-});

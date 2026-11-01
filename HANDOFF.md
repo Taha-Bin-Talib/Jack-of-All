@@ -55,6 +55,10 @@ Cards: white face, rank horizontal + small suit top-left, one big centre suit, r
 - `preview/DesignPreview.tsx` — style guide, opened from the Home screen footer link "Design".
 - Old `src/theme.ts` (`C`) and `src/ui.tsx` still drive the existing screens; later stages migrate them to the design system.
 
+## Home & game discovery (Stage 2 — done)
+`app/src/screens/Home.tsx` is now a shell with a small route stack (no nav library in the project): Home → Games list → Game info, plus Profile, Settings (→ How to play, Server address, Design system). Android back pops the stack. Sub-screens live in `app/src/screens/home/` (HomeMain, GamesList, GameInfo, Profile, Settings/Rules/Server, parts, types).
+`app/src/games.ts` = UI catalogue (taglines, personalities, blurbs; player counts read from the engine; rules preview from rules.ts). Artwork is in `design/components/GameArt.tsx` (Thulla: gold-framed spade fan; Bluff: oxblood + hidden cards + "?"; Jack Thief: court-style Jack card), tiles in `GameCards.tsx` (GameCard carousel, GameRow list). Home "Play now" starts an offline game of the last-played game (stored in AsyncStorage `joa.lastGame`). Create/Join need a display name; without one the app opens Profile first.
+
 ## Play now (offline vs 3 bots)
 Home screen button "Play now — offline vs 3 bots" starts the selected game with the user + Bot Ali/Sara/Zain (4 players, no internet). Implemented in `net.ts` (`playOffline`, `localAct`, `stopLocal`): the copied server engine and `rooms.js` run inside the app, the human gets a fake ws object, bots are players with `connected:false` (the engines' existing auto-play for disconnected players, BOT_MS tuned to ~1.2–1.8 s). `net.local` flag hides chat/reconnect banner; rematch restarts immediately with the same bots.
 

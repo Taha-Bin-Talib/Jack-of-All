@@ -10,3 +10,6 @@ export { PlayerAvatar } from './components/PlayerAvatar';
 export { PlayingCard } from './components/PlayingCard';
 export { GameTile } from './components/GameTile';
 export * as Icons from './components/icons';
+export { GameArt, JackCardFace } from './components/GameArt';
+export { GameCard, GameRow } from './components/GameCards';
+export { fontFamily as fontFamilyRef } from './typography';

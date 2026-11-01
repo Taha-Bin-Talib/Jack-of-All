@@ -13,3 +13,6 @@ export const Close = ({ size = 22, color = colors.text }: P) => (
 export const Chat = ({ size = 22, color = colors.text }: P) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><Path d="M4 5h16v11H9l-5 4V5z" /></Svg>
 );
+export const Sliders = ({ size = 22, color = colors.text }: P) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round"><Path d="M4 7h9M17 7h3M4 17h3M11 17h9" /><Path d="M15 5v4M9 15v4" /></Svg>
+);
