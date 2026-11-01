@@ -8,14 +8,14 @@ const hash = (s: string) => { let h = 0; for (const ch of s) h = (h * 31 + ch.ch
 const initials = (n: string) => { const w = n.trim().split(/\s+/); return ((w[0]?.[0] || '?') + (w.length > 1 ? w[w.length - 1][0] : '')).toUpperCase(); };
 
 /* Round monogram avatar. `active` = it is their turn (gold ring); `online` shows a presence dot. */
-export function PlayerAvatar({ name, size = 'md', active, online }: { name: string; size?: 'sm' | 'md' | 'lg'; active?: boolean; online?: boolean }) {
-  const d = sizes.avatar[size];
+export function PlayerAvatar({ name, size = 'md', active, online, diameter }: { name: string; size?: 'sm' | 'md' | 'lg'; active?: boolean; online?: boolean; diameter?: number }) {
+  const d = diameter ?? sizes.avatar[size];
   return (
     <View style={{ width: d, height: d }}>
       <View style={[st.disc, { width: d, height: d, borderRadius: d / 2, backgroundColor: FILLS[hash(name) % FILLS.length] }, active ? st.ring : st.edge]}>
-        <AppText variant={size === 'lg' ? 'h2' : size === 'md' ? 'title' : 'bodySm'} style={{ fontFamily: 'PlayfairDisplay_600SemiBold' }}>{initials(name)}</AppText>
+        <AppText variant={size === 'lg' ? 'h2' : size === 'md' ? 'title' : 'bodySm'} style={{ fontFamily: 'PlayfairDisplay_600SemiBold', ...(diameter ? { fontSize: Math.max(10, diameter * 0.4), lineHeight: Math.max(12, diameter * 0.46) } : null) }}>{initials(name)}</AppText>
       </View>
-      {online !== undefined && <View style={[st.dot, { backgroundColor: online ? '#7FA37A' : colors.textMuted, opacity: online ? 1 : 0.5 }]} />}
+      {online !== undefined && d >= 28 && <View style={[st.dot, { backgroundColor: online ? '#7FA37A' : colors.textMuted, opacity: online ? 1 : 0.5 }]} />}
     </View>
   );
 }

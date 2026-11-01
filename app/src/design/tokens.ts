@@ -20,6 +20,8 @@ export const colors = {
   scrim: 'rgba(10,20,17,0.72)',
   onGold: '#142D26',                      // text on gold fills
   onOxblood: '#F1E8D5',
+  // card table
+  table: { felt: '#1F4D3B', feltDeep: '#17402F', wood: '#3A2E22', woodLine: '#6B5A3F', oxbloodRim: '#5C2229', ivoryRim: '#B9AE92', good: '#8FB58A', bad: '#D9A3A8' },
   // playing cards
   card: { face: '#F6EFDD', ink: '#1F2220', red: '#762F36', edge: '#CFC4A8', back: '#762F36', backLine: '#BD9857' },
 } as const;

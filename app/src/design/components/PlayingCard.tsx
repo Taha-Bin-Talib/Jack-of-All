@@ -1,16 +1,22 @@
 import React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { borders, cardSizes, colors, shadows } from '../tokens';
 import { fontFamily } from '../typography';
-import { Text } from 'react-native';
 import { Suit } from '../../ui';
+import { JackCardFace } from './JackFace';
 
 const LABEL: Record<number, string> = { 11: 'J', 12: 'Q', 13: 'K', 14: 'A' };
+const RANK_WORD: Record<number, string> = { 11: 'Jack', 12: 'Queen', 13: 'King', 14: 'Ace' };
+const SUIT_WORD: Record<string, string> = { S: 'Spades', H: 'Hearts', D: 'Diamonds', C: 'Clubs' };
+export const cardName = (id?: string) => { if (!id) return 'Face-down card'; const r = parseInt(id, 10); return `${RANK_WORD[r] || r} of ${SUIT_WORD[/[SHDC]/.exec(id)![0]]}`; };
 
-/* Playing card — ivory face, ink / oxblood suits, Playfair rank.
-   `id` uses the game's card ids: rank + suit letter, e.g. "14S" (ace of spades), "10H". */
-export function PlayingCard({ id, size = 'md', width, faceDown, selected, disabled, onPress }: {
-  id?: string; size?: 'xs' | 'sm' | 'md' | 'lg'; width?: number; faceDown?: boolean; selected?: boolean; disabled?: boolean; onPress?: () => void;
+/* Playing card — ivory face, ink / oxblood suits, Playfair rank, SVG suits (never emoji).
+   `id` uses the game's card ids: rank + suit letter, e.g. "14S" (ace of spades), "10H", and "12H:1" for a second deck.
+   States: faceDown (hidden), selected (lifted + gold edge), glow (gold edge, e.g. a pair), disabled (dimmed, not pressable).
+   `court` draws Jacks as court cards (used by Jack Thief).  `width` overrides `size`. */
+export function PlayingCard({ id, size = 'md', width, faceDown, selected, glow, disabled, court, lift: lifted, onPress, onPressDisabled }: {
+  id?: string; size?: 'xs' | 'sm' | 'md' | 'lg'; width?: number; faceDown?: boolean; selected?: boolean; glow?: boolean; disabled?: boolean; court?: boolean; lift?: boolean;
+  onPress?: () => void; onPressDisabled?: () => void;
 }) {
   const w = width ?? cardSizes[size], h = Math.round(w * cardSizes.ratio), rad = cardSizes.radius(w);
   const box = [{ width: w, height: h, borderRadius: rad }, shadows.sm];
@@ -26,27 +32,33 @@ export function PlayingCard({ id, size = 'md', width, faceDown, selected, disabl
     );
   } else {
     const rank = parseInt(id, 10), s = /[SHDC]/.exec(id)![0], red = s === 'H' || s === 'D', ink = red ? colors.card.red : colors.card.ink;
-    const idx = (
-      <View style={{ alignItems: 'center' }}>
-        <Text allowFontScaling={false} numberOfLines={1} style={{ fontFamily: fontFamily.display, color: ink, fontSize: w * 0.3, lineHeight: w * 0.34 }}>{LABEL[rank] || rank}</Text>
-        <Suit s={s} size={w * 0.19} color={ink} />
-      </View>
-    );
-    face = (
-      <View style={[box, st.face, selected && st.selected]}>
-        <View style={{ position: 'absolute', left: w * 0.09, top: w * 0.05 }}>{idx}</View>
-        <View style={{ position: 'absolute', right: w * 0.09, bottom: w * 0.05, transform: [{ rotate: '180deg' }] }}>{idx}</View>
-        <Suit s={s} size={w * 0.46} color={ink} />
-      </View>
-    );
+    if (court && rank === 11) {
+      face = <View style={[box, st.court, (selected || glow) && st.edge, shadows.sm]}><JackCardFace width={w} suit={s} /></View>;
+    } else {
+      const idx = (
+        <View style={{ alignItems: 'center' }}>
+          <Text allowFontScaling={false} numberOfLines={1} style={{ fontFamily: fontFamily.display, color: ink, fontSize: w * 0.3, lineHeight: w * 0.34 }}>{LABEL[rank] || rank}</Text>
+          <Suit s={s} size={w * 0.19} color={ink} />
+        </View>
+      );
+      face = (
+        <View style={[box, st.face, (selected || glow) && st.edge]}>
+          <View style={{ position: 'absolute', left: w * 0.09, top: w * 0.05 }}>{idx}</View>
+          <View style={{ position: 'absolute', right: w * 0.09, bottom: w * 0.05, transform: [{ rotate: '180deg' }] }}>{idx}</View>
+          <Suit s={s} size={w * 0.46} color={ink} />
+        </View>
+      );
+    }
   }
-  const lift = selected ? { transform: [{ translateY: -8 }] } : null;
-  return onPress
-    ? <Pressable onPress={disabled ? undefined : onPress} accessibilityRole="button" style={[lift, disabled && { opacity: 0.45 }]}>{face}</Pressable>
-    : <View style={[lift, disabled && { opacity: 0.45 }]}>{face}</View>;
+  const shade = disabled ? <View pointerEvents="none" style={{ position: 'absolute', left: 0, top: 0, right: 0, bottom: 0, borderRadius: rad, backgroundColor: 'rgba(20,45,38,0.5)' }} /> : null;
+  const lift = selected && lifted ? { transform: [{ translateY: -8 }] } : null;
+  const inner = <View style={lift}>{face}{shade}</View>;
+  if (!onPress && !onPressDisabled) return inner;
+  return <Pressable onPress={disabled ? onPressDisabled : onPress} accessibilityRole="button" accessibilityLabel={faceDown ? 'Face-down card' : cardName(id)} accessibilityState={{ disabled: !!disabled, selected: !!selected }}>{inner}</Pressable>;
 }
 const st = StyleSheet.create({
   face: { backgroundColor: colors.card.face, borderWidth: borders.hair, borderColor: colors.card.edge, alignItems: 'center', justifyContent: 'center' },
-  selected: { borderColor: colors.gold, borderWidth: 2 },
+  court: { backgroundColor: colors.card.face, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  edge: { borderColor: colors.gold, borderWidth: 2 },
   back: { backgroundColor: colors.card.back, borderWidth: borders.hair, borderColor: colors.card.backLine },
 });

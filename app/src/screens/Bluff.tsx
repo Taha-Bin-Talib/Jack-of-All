@@ -1,9 +1,9 @@
 import React from 'react';
-import { Text, View, Pressable, StyleSheet } from 'react-native';
-import { C } from '../theme';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { act } from '../net';
-import { Btn, Card, TimerBar, Toast, nameOf, rankLabel, rankOf } from '../ui';
-import { DealFx, Geo, Hand, PileStack, Ring, Seat, TurnArrow, useFlights } from '../table/Table';
+import { AppText, CardHand, DealFx, EventToast, FlipCard, GameActionButton, GamePanel, GameTable, Geo, NoticeBar, PileStack, PlayerStatus, ScoreBoard, TurnIndicator, TurnTimer, VisibilityTag, borders, colors, radii, spacing, useFlights, useGameNotice } from '../design';
+import { fontFamily } from '../design/typography';
+import { nameOf, rankLabel, rankOf } from '../ui';
 import type { RoomState } from '../types';
 
 const RANKS = [14, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
@@ -31,8 +31,10 @@ function Fx({ geo, g }: { geo: Geo; g: any }) {
   return <>{layer}</>;
 }
 
+/* Bluff: hidden information. The face-down pile and the spoken claim are public; your hand is private. */
 export default function Bluff({ room }: { room: RoomState }) {
   const g = room.g, me = room.you.id, P = room.players;
+  const { notice, show } = useGameNotice();
   const [sel, setSel] = React.useState<string[]>([]);
   const [rk, setRk] = React.useState<number | null>(null);
   React.useEffect(() => { setSel([]); setRk(null); }, [g.turn, g.stage]);
@@ -48,86 +50,86 @@ export default function Bluff({ room }: { room: RoomState }) {
   const fresh = !g.last && g.stage === 'open' && !g.claim;
   const claim = g.claim;
   const claimTxt = claim ? plural(claim.rank, claim.count) : '';
-  const hint = g.reveal ? '' : opening ? '' : responding ? '' : g.turn ? `Waiting for ${nameOf(P, g.turn)}…` : '';
   const say = sel.length && rk ? `“${plural(rk, sel.length)}”` : '';
+  const rows = P.map(p => { const sd = g.seats.find((x: any) => x.id === p.id); return { id: p.id, name: p.name, count: sd?.count, out: sd?.out, me: p.id === me, away: !p.connected, active: g.turn === p.id }; });
+  const tapCard = (c: string) => { if (max) toggle(c); else show(g.reveal ? 'Wait — the cards are being revealed.' : `Wait for ${nameOf(P, g.turn)} — it is not your turn.`); };
   return (
     <View style={{ flex: 1 }}>
-      <Toast ev={g.event} />
-      <Ring players={P} meId={me}>
+      <ScoreBoard rows={rows} label="Cards in hand (public)" />
+      <View style={{ flex: 1, marginBottom: 30 }}>
+      <EventToast ev={g.event} />
+      <GameTable players={P} meId={me} tone="bluff">
         {geo => (
           <>
             <PileStack geo={geo} count={g.pile} />
-            <TurnArrow geo={geo} i={geo.idx(g.turn || '')} />
+            <TurnIndicator geo={geo} i={geo.idx(g.turn || '')} />
             {claim && g.pile > 0 && (
-              <View style={{ position: 'absolute', left: geo.cx - geo.u * 17, width: geo.u * 34, top: geo.cy + geo.u * 8, alignItems: 'center' }}>
-                <Text style={st.claim}>{claimTxt}</Text>
+              <View style={[st.claim, { left: geo.cx - geo.u * 13, width: geo.u * 26, top: geo.cy + geo.u * 7 }]} pointerEvents="none">
+                <AppText style={{ fontFamily: fontFamily.display, fontSize: Math.max(13, geo.u * 3.6), color: colors.card.ink }} numberOfLines={1}>“{claimTxt}”</AppText>
               </View>
             )}
             {P.map((p, i) => {
               const sd = g.seats.find((x: any) => x.id === p.id);
-              return <Seat key={p.id} geo={geo} i={i} name={p.name} count={sd?.count} out={sd?.out} me={p.id === me} off={!p.connected}
+              return <PlayerStatus key={p.id} geo={geo} i={i} name={p.name} count={sd?.count} out={sd?.out} me={p.id === me} off={!p.connected}
                 active={g.turn === p.id} timerMs={g.timer && g.timer.pid === p.id ? g.timer.ms : null} />;
             })}
             <DealFx geo={geo} run={fresh} />
             <Fx geo={geo} g={g} />
           </>
         )}
-      </Ring>
+      </GameTable>
+      </View>
+      <View style={st.vis}><VisibilityTag kind="public" text={g.pile > 0 ? `Pile · ${g.pile} face-down${claim ? ' · claim: ' + claimTxt : ''}` : 'Pile · empty'} /></View>
+      <NoticeBar notice={notice} />
 
       {g.reveal ? (
-        <View style={st.panel}>
-          <Text style={[st.pT, { color: g.reveal.truthful ? '#7be29f' : '#ff8a80' }]}>{nameOf(P, g.reveal.callerId)} called — {g.reveal.truthful ? 'TRUTH!' : 'BLUFF!'}</Text>
-          <View style={st.row}>{g.reveal.cards.map((c: string) => <Card key={c} id={c} w={46} />)}</View>
-          <Text style={st.pS}>{nameOf(P, g.reveal.loserId)} picks up {g.reveal.taken} cards</Text>
-        </View>
+        <GamePanel title={`${nameOf(P, g.reveal.callerId)} called — ${g.reveal.truthful ? 'TRUTH!' : 'BLUFF!'}`} accent={g.reveal.truthful ? colors.table.good : colors.table.bad}>
+          <View style={st.revealRow}>{g.reveal.cards.map((c: string, i: number) => <FlipCard key={c} id={c} width={46} delay={i * 160} />)}</View>
+          <AppText variant="bodySm" tone="muted" style={{ textAlign: 'center', marginTop: spacing.sm }}>{nameOf(P, g.reveal.loserId)} picks up {g.reveal.taken} cards</AppText>
+        </GamePanel>
       ) : (
         <>
           {opening ? (
-            <View style={st.panel}>
-              <Text style={st.pT}>Your turn — open the round</Text>
-              <Text style={st.step}><Text style={st.num}>1 </Text>Tap 1 to 4 cards from your hand{sel.length ? `  ·  ${sel.length} selected` : ''}</Text>
-              <Text style={st.step}><Text style={st.num}>2 </Text>Say what they are (you may bluff)</Text>
+            <GamePanel title="Your turn — open the round">
+              <AppText variant="bodySm" style={{ textAlign: 'center' }}><AppText variant="bodySm" tone="gold">1</AppText>  Tap 1 to 4 cards{sel.length ? ` · ${sel.length} selected` : ''}     <AppText variant="bodySm" tone="gold">2</AppText>  Say what they are (you may bluff)</AppText>
               <View style={st.ranks}>
                 {RANKS.map(r => (
-                  <Pressable key={r} onPress={() => setRk(r)} style={[st.chip, rk === r && st.chipOn]}><Text style={[st.chipT, rk === r && { color: '#1d1405' }]}>{rankLabel(r)}</Text></Pressable>
+                  <Pressable key={r} accessibilityRole="button" accessibilityState={{ selected: rk === r }} onPress={() => setRk(r)} style={[st.chip, rk === r && st.chipOn]}>
+                    <AppText style={{ fontFamily: fontFamily.display, fontSize: 16, color: rk === r ? colors.onGold : colors.text }}>{rankLabel(r)}</AppText>
+                  </Pressable>
                 ))}
               </View>
-              <Btn title={say ? `Play ${sel.length} card${sel.length > 1 ? 's' : ''} — say ${say}` : !sel.length ? 'Pick your cards first' : 'Now pick a rank'} disabled={!sel.length || !rk}
-                style={{ marginTop: 8, paddingVertical: 11 }} onPress={() => { act('open', { rank: rk, cards: sel }); setSel([]); }} />
-            </View>
+              <GameActionButton title={say ? `Play ${sel.length} card${sel.length > 1 ? 's' : ''} — say ${say}` : !sel.length ? 'Pick your cards first' : 'Now pick a rank'} disabled={!sel.length || !rk}
+                style={{ marginTop: spacing.sm }} onPress={() => { act('open', { rank: rk, cards: sel }); setSel([]); }} />
+            </GamePanel>
           ) : responding ? (
-            <View style={st.panel}>
-              <Text style={st.pT}>{nameOf(P, claim.by)} says: {claimTxt}</Text>
-              <Text style={st.pS}>Call their bluff, add 1–2 more cards to the pile, or pass{sel.length ? `  ·  ${sel.length} selected` : ''}</Text>
-              <View style={st.respond}>
-                <Btn title="Call BLUFF" kind="danger" disabled={!g.you.canCall} style={{ flex: 1, paddingHorizontal: 6, paddingVertical: 11 }} onPress={() => act('call')} />
-                <Btn title={sel.length ? `Add ${sel.length}` : 'Add 1–2'} disabled={!sel.length} style={{ flex: 1, paddingHorizontal: 6, paddingVertical: 11 }} onPress={() => { act('add', { cards: sel }); setSel([]); }} />
-                <Btn title="Pass" kind="ghost" style={{ flex: 1, paddingHorizontal: 6, paddingVertical: 11 }} onPress={() => act('pass')} />
+            <GamePanel title={`${nameOf(P, claim.by)} says: ${claimTxt}`}>
+              <AppText variant="bodySm" tone="muted" style={{ textAlign: 'center', marginBottom: spacing.sm }}>Call their bluff, add 1–2 more cards to the pile, or pass{sel.length ? `  ·  ${sel.length} selected` : ''}</AppText>
+              <View style={st.row}>
+                <GameActionButton title="Call Bluff" kind="danger" flex disabled={!g.you.canCall} onPress={() => act('call')} />
+                <GameActionButton title={sel.length ? `Add ${sel.length}` : 'Add 1–2'} flex disabled={!sel.length} onPress={() => { act('add', { cards: sel }); setSel([]); }} />
+                <GameActionButton title="Pass" kind="quiet" flex onPress={() => act('pass')} />
               </View>
-            </View>
+            </GamePanel>
           ) : (
-            <Text style={st.hint}>{claim && g.pile > 0 ? `${claimTxt} · ` : ''}{hint}</Text>
+            <AppText variant="title" style={st.hint}>{g.turn ? `Waiting for ${nameOf(P, g.turn)}…` : ''}</AppText>
           )}
-          {g.timer && g.timer.pid === me && <View style={{ paddingHorizontal: 16, marginBottom: 2 }}><TimerBar ms={g.timer.ms} /></View>}
+          {g.timer && g.timer.pid === me && <View style={{ paddingHorizontal: spacing.lg, marginBottom: 2 }}><TurnTimer ms={g.timer.ms} /></View>}
         </>
       )}
-      <Hand cards={g.you.hand} selected={sel} animateIn={fresh} onTap={max ? toggle : undefined} />
+      <VisibilityTag kind="private" text="Your hand · only you" />
+      <CardHand cards={g.you.hand} selected={sel} animateIn={fresh} onTap={tapCard} />
     </View>
   );
 }
 
 const st = StyleSheet.create({
-  hint: { color: '#fff', fontSize: 16, textAlign: 'center', paddingHorizontal: 14, minHeight: 24, fontWeight: '800' },
-  claim: { color: C.gold, fontWeight: '900', fontSize: 16, textShadowColor: '#000', textShadowRadius: 4 },
-  panel: { marginHorizontal: 12, marginBottom: 4, padding: 10, borderRadius: 14, backgroundColor: 'rgba(0,0,0,.45)', borderWidth: 1, borderColor: C.gold },
-  pT: { color: C.gold, fontWeight: '900', fontSize: 16, textAlign: 'center', marginBottom: 4 },
-  pS: { color: '#fff', fontSize: 13, textAlign: 'center', marginTop: 2, marginBottom: 6 },
-  step: { color: '#fff', fontSize: 14, fontWeight: '600', marginTop: 4 },
-  num: { color: C.gold, fontWeight: '900' },
-  row: { flexDirection: 'row', gap: 6, justifyContent: 'center', marginTop: 8 },
-  ranks: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 5, marginTop: 6 },
-  respond: { flexDirection: 'row', gap: 8 },
-  chip: { minWidth: 38, height: 36, borderRadius: 10, borderWidth: 1.5, borderColor: C.dim, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
-  chipOn: { backgroundColor: C.gold, borderColor: C.gold },
-  chipT: { color: '#fff', fontWeight: '800', fontSize: 16 },
+  hint: { textAlign: 'center', paddingHorizontal: spacing.lg, minHeight: 24, fontFamily: fontFamily.semibold },
+  vis: { alignItems: 'center', marginVertical: 2 },
+  claim: { position: 'absolute', alignItems: 'center', backgroundColor: colors.card.face, borderRadius: radii.sm, paddingVertical: 2, borderWidth: borders.hair, borderColor: colors.card.edge },
+  row: { flexDirection: 'row', gap: spacing.sm },
+  revealRow: { flexDirection: 'row', gap: 6, justifyContent: 'center', marginTop: spacing.sm },
+  ranks: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 5, marginTop: spacing.sm },
+  chip: { minWidth: 38, height: 34, borderRadius: radii.md, borderWidth: borders.hair, borderColor: colors.lineStrong, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
+  chipOn: { backgroundColor: colors.gold, borderColor: colors.gold },
 });

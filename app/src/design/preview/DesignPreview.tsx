@@ -58,7 +58,7 @@ export default function DesignPreview({ onBack }: { onBack: () => void }) {
       <SectionHeading title="Playing cards" />
       <View style={{ flexDirection: 'row', gap: spacing.md, alignItems: 'flex-end', flexWrap: 'wrap' }}>
         <PlayingCard id="14S" size="lg" />
-        <PlayingCard id="12H" size="md" selected={pick === '12H'} onPress={() => setPick(pick === '12H' ? null : '12H')} />
+        <PlayingCard id="12H" size="md" selected={pick === '12H'} lift onPress={() => setPick(pick === '12H' ? null : '12H')} />
         <PlayingCard id="10D" size="md" />
         <PlayingCard id="7C" size="sm" />
         <PlayingCard faceDown size="md" />
