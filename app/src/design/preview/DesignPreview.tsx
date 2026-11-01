@@ -47,7 +47,7 @@ export default function DesignPreview({ onBack }: { onBack: () => void }) {
       <SectionHeading title="Players" />
       <View style={{ flexDirection: 'row', gap: spacing.lg, alignItems: 'center' }}>
         <PlayerAvatar name="Taha Talib" size="lg" active online />
-        <PlayerAvatar name="Bot Sara" online />
+        <PlayerAvatar name="Sara" online />
         <PlayerAvatar name="Ali" size="sm" online={false} />
         <View>
           <AppText variant="title">Taha</AppText>

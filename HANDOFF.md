@@ -105,3 +105,8 @@ Home screen button "Play now — offline vs 3 bots" starts the selected game wit
 
 ## Ideas offered, not built
 - **Quick Play / online matchmaking**: a server-side queue per game that auto-creates a room when enough players are waiting (needs a `queue` message, min/max player handling per game, and a Home-screen button). User asked how it would work but has not asked for it to be built.
+
+## Update: name prompt, wide collection, unlabelled opponents
+- First launch (no saved name) shows `screens/home/NamePrompt.tsx` before Home; Profile still lets players rename later.
+- `GameRow` is a full-width card that splits the screen height, so the three games fit without scrolling (narrow layout under 330px wide).
+- Offline opponents are ordinary names (Ali, Sara, Zain; swapped if the player has the same name); no UI text says "bot". Internally they are still `bot0..2` players with `connected:false` in `net.ts`.

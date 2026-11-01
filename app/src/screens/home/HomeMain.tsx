@@ -32,7 +32,7 @@ export default function HomeMain({ c }: { c: Ctx }) {
         <AppText variant="body" tone="muted" style={{ marginTop: spacing.md }}>Three classic card games, one table. Host a room for your friends, or sit down against the house any time — no internet needed.</AppText>
         <PrimaryButton title="Play now" size="lg" onPress={() => c.playOffline(c.lastGame)} style={{ marginTop: spacing.xl }} />
         <View style={st.under}>
-          <AppText variant="bodySm" tone="muted" style={{ flex: 1 }}>{last.name} · vs 3 bots</AppText>
+          <AppText variant="bodySm" tone="muted" style={{ flex: 1 }}>{last.name} · offline, 4 players</AppText>
           <AppText variant="bodySm" tone="gold" onPress={() => c.nav.push({ k: 'games' })} suppressHighlighting accessibilityRole="link" style={{ paddingVertical: spacing.md }}>Choose another game</AppText>
         </View>
       </View>

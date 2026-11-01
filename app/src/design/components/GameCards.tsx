@@ -28,16 +28,20 @@ export function GameCard({ game, width, onPress }: { game: GameMeta; width: numb
 }
 
 /* List row for the Games screen: square artwork + description + personality. */
+/* A wide card that stretches to the width of the screen. Several can share a screen: each row takes an equal slice of the height. */
 export function GameRow({ game, onPress }: { game: GameMeta; onPress: () => void }) {
+  const [box, setBox] = React.useState({ w: 0, h: 0 });
+  const narrow = box.w > 0 && box.w < 330, artW = Math.round(box.w * (narrow ? 0.3 : 0.4)), tight = box.h < 120 || (narrow && box.h < 150);
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={`${game.name}. ${game.tagline}`} onPress={onPress}
+      onLayout={e => setBox({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}
       style={({ pressed }) => [st.row2, pressed && { opacity: 0.88 }]}>
-      <GameArt gameId={game.id} width={116} height={148} />
-      <View style={{ flex: 1, paddingVertical: spacing.md, paddingRight: spacing.md, paddingLeft: spacing.lg }}>
-        <AppText variant="h2">{game.name}</AppText>
-        <AppText variant="bodySm" style={{ fontFamily: fontFamily.displaySemi, color: game.accent, marginTop: 2 }}>{game.tagline}</AppText>
-        <AppText variant="bodySm" tone="muted" numberOfLines={3} style={{ marginTop: spacing.sm }}>{game.blurb}</AppText>
-        <AppText variant="label" tone="gold" style={{ marginTop: 'auto', paddingTop: spacing.sm }}>{game.players}</AppText>
+      {box.w > 0 && <GameArt gameId={game.id} width={artW} height={box.h} />}
+      <View style={{ flex: 1, justifyContent: 'center', paddingVertical: spacing.md, paddingRight: spacing.md, paddingLeft: narrow ? spacing.md : spacing.lg }}>
+        <AppText variant="h2" numberOfLines={1} style={narrow ? { fontSize: 20, lineHeight: 26 } : undefined}>{game.name}</AppText>
+        <AppText variant="bodySm" numberOfLines={1} style={{ fontFamily: fontFamily.displaySemi, color: game.accent, marginTop: 2 }}>{game.tagline}</AppText>
+        {!tight && <AppText variant="bodySm" tone="muted" numberOfLines={box.h > 170 ? 4 : 3} style={{ marginTop: spacing.sm }}>{game.blurb}</AppText>}
+        <AppText variant="label" tone="gold" style={{ marginTop: spacing.sm }}>{game.players}</AppText>
       </View>
     </Pressable>
   );
@@ -48,5 +52,5 @@ const st = StyleSheet.create({
   rule: { height: 2, opacity: 0.9 },
   body: { padding: spacing.lg },
   row: { flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.md },
-  row2: { flexDirection: 'row', backgroundColor: colors.bgAlt, borderWidth: borders.hair, borderColor: colors.line, borderRadius: radii.md, overflow: 'hidden', minHeight: 148 },
+  row2: { flexDirection: 'row', backgroundColor: colors.bgAlt, borderWidth: borders.hair, borderColor: colors.line, borderRadius: radii.md, overflow: 'hidden', flex: 1, minHeight: 100, maxHeight: 250 },
 });

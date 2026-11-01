@@ -77,7 +77,7 @@ function onMsg(m: any) {
 
 /* ---------- offline "Play now": the same game engine runs inside the app, with 3 bots ---------- */
 let L: { rooms: any; games: any; ws: any; room: any } | null = null;
-const BOTS = ['Bot Ali', 'Bot Sara', 'Bot Zain'];
+const BOT_NAMES = ['Ali', 'Sara', 'Zain', 'Maya', 'Omar'];   // ordinary names; the table never labels them as computer players
 export function playOffline(game: string, name: string) {
   stopLocal();
   const rooms = require('./engine/rooms'), games = require('./engine/games'), net = require('./engine/net');
@@ -88,7 +88,8 @@ export function playOffline(game: string, name: string) {
   rooms.handle(ws, { t: 'create', name, game });
   const room = ws.room;
   if (!room) { set({ local: false }); return; }
-  BOTS.forEach((n, i) => room.players.push({ id: 'bot' + i, token: 'bot' + i, name: n, ws: null, connected: false, hand: [], out: false, place: 0 }));
+  const taken = name.trim().toLowerCase();
+  BOT_NAMES.filter(n => n.toLowerCase() !== taken).slice(0, 3).forEach((n, i) => room.players.push({ id: 'bot' + i, token: 'bot' + i, name: n, ws: null, connected: false, hand: [], out: false, place: 0 }));
   L = { rooms, games, ws, room };
   room.engine.start(room);
   net.broadcast(room);

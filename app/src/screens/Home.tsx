@@ -11,6 +11,7 @@ import GameInfo from './home/GameInfo';
 import CreateRoom from './home/CreateRoom';
 import JoinRoom from './home/JoinRoom';
 import Profile from './home/Profile';
+import NamePrompt from './home/NamePrompt';
 import { Rules, Server, Settings } from './home/Settings';
 import type { Ctx, Route } from './home/types';
 
@@ -21,8 +22,8 @@ const LAST = 'joa.lastGame';
 export default function Home() {
   const net = useNet();
   const [stack, setStack] = React.useState<Route[]>([{ k: 'home' }]);
-  const [name, setName] = React.useState(''), [lastGame, setLast] = React.useState<GameId>('thulla'), [busy, setBusy] = React.useState(false);
-  React.useEffect(() => { savedName().then(n => n && setName(n)); AsyncStorage.getItem(LAST).then(g => { if (g && (GAME_IDS as string[]).includes(g)) setLast(g as GameId); }).catch(() => {}); }, []);
+  const [name, setName] = React.useState(''), [lastGame, setLast] = React.useState<GameId>('thulla'), [busy, setBusy] = React.useState(false), [loaded, setLoaded] = React.useState(false);
+  React.useEffect(() => { savedName().then(n => { if (n) setName(n); setLoaded(true); }); AsyncStorage.getItem(LAST).then(g => { if (g && (GAME_IDS as string[]).includes(g)) setLast(g as GameId); }).catch(() => {}); }, []);
   React.useEffect(() => { setBusy(false); }, [net.errSeq, net.room]);
 
   const prevLen = React.useRef(1);
@@ -43,6 +44,8 @@ export default function Home() {
     join: code => { saveName(name.trim()); setBusy(true); send({ t: 'join', code, name: name.trim() }); },
   };
   const r = stack[stack.length - 1];
+  if (!loaded) return null;                                   // wait for the saved name so the prompt doesn't flash
+  if (!name.trim()) return <Appear style={{ flex: 1 }}><NamePrompt onDone={n => c.saveProfile(n)} /></Appear>;
   const view = (() => {
   switch (r.k) {
     case 'games': return <GamesList c={c} />;

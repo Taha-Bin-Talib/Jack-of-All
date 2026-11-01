@@ -39,7 +39,7 @@ export default function GameInfo({ c, id }: { c: Ctx; id: GameId }) {
 
       <SectionHeading title="Take a seat" />
       <PrimaryButton title="Play now" size="lg" onPress={() => c.playOffline(id)} />
-      <AppText variant="caption" tone="muted" style={{ marginTop: spacing.sm, textAlign: 'center' }}>You and 3 bots · no internet needed</AppText>
+      <AppText variant="caption" tone="muted" style={{ marginTop: spacing.sm, textAlign: 'center' }}>Four at the table · no internet needed</AppText>
       <SecondaryButton title="Create a room" style={{ marginTop: spacing.lg }} onPress={() => c.nav.push({ k: 'create', id })} />
       <SecondaryButton title="Join a room" style={{ marginTop: spacing.md }} onPress={() => c.nav.push({ k: 'join' })} />
     </ScreenContainer>

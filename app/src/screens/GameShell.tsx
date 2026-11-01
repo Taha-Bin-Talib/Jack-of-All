@@ -36,7 +36,7 @@ export default function GameShell({ room, local, onLeave }: { room: RoomState; l
       rows.sort((a, b) => (a.tag === 'Jack Thief' ? 1 : 0) - (b.tag === 'Jack Thief' ? 1 : 0));
     }
   }
-  const sub = local ? 'Practice · vs 3 bots' : room.game === 'thulla' && g ? `Room ${room.code} · Trick ${g.trickNo}` : `Room ${room.code}`;
+  const sub = local ? 'Offline table' : room.game === 'thulla' && g ? `Room ${room.code} · Trick ${g.trickNo}` : `Room ${room.code}`;
   return (
     <View style={{ flex: 1 }}>
       <GameHeader title={meta?.name || room.gameName} subtitle={sub} accent={ACCENT[room.game]} onMenu={() => setMenu(true)} />
