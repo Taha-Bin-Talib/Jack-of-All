@@ -1,16 +1,14 @@
 import React from 'react';
-import { StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
+import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import { AppHeader, AppText, GameArt, PrimaryButton, ScreenContainer, SecondaryButton, SectionHeading, borders, colors, radii, sizes, spacing } from '../../design';
 import { fontFamily } from '../../design/typography';
 import { GAMES, GameId } from '../../games';
-import { WaitNote } from './parts';
 import type { Ctx } from './types';
 
 export default function GameInfo({ c, id }: { c: Ctx; id: GameId }) {
   const g = GAMES[id], { width } = useWindowDimensions();
-  const [all, setAll] = React.useState(false), [joining, setJoining] = React.useState(false), [code, setCode] = React.useState('');
+  const [all, setAll] = React.useState(false);
   const w = Math.min(width, sizes.maxContent + 40) - sizes.gutter * 2;
-  const needName = () => { if (!c.name.trim()) { c.nav.push({ k: 'profile', hint: 'Choose a name so your friends can see who is at the table.' }); return true; } return false; };
   const rules = all ? g.rulesFull : g.rulesPreview;
   return (
     <ScreenContainer scroll safe={false} contentStyle={{ paddingBottom: spacing.giant }}>
@@ -42,14 +40,8 @@ export default function GameInfo({ c, id }: { c: Ctx; id: GameId }) {
       <SectionHeading title="Take a seat" />
       <PrimaryButton title="Play now" size="lg" onPress={() => c.playOffline(id)} />
       <AppText variant="caption" tone="muted" style={{ marginTop: spacing.sm, textAlign: 'center' }}>You and 3 bots · no internet needed</AppText>
-      <SecondaryButton title="Create a room" style={{ marginTop: spacing.lg }} disabled={c.busy} onPress={() => { if (!needName()) c.create(id); }} />
-      {joining ? (
-        <View style={st.joinRow}>
-          <TextInput value={code} onChangeText={t => setCode(t.toUpperCase().replace(/[^A-Z]/g, ''))} placeholder="CODE" placeholderTextColor={colors.textMuted} autoCapitalize="characters" autoCorrect={false} maxLength={4} autoFocus style={st.code} accessibilityLabel="Room code" />
-          <PrimaryButton title="Join" fullWidth={false} style={{ flex: 1 }} disabled={code.length !== 4 || c.busy} onPress={() => { if (!needName()) c.join(code); }} />
-        </View>
-      ) : <SecondaryButton title="Join a room" style={{ marginTop: spacing.md }} disabled={c.busy} onPress={() => setJoining(true)} />}
-      <WaitNote busy={c.busy} />
+      <SecondaryButton title="Create a room" style={{ marginTop: spacing.lg }} onPress={() => c.nav.push({ k: 'create', id })} />
+      <SecondaryButton title="Join a room" style={{ marginTop: spacing.md }} onPress={() => c.nav.push({ k: 'join' })} />
     </ScreenContainer>
   );
 }

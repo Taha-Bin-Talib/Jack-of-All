@@ -40,7 +40,7 @@ function createRoom(ws, m) {
 }
 
 function addPlayer(ws, room, name) {
-  const p = { id: newId(), token: crypto.randomBytes(12).toString('hex'), name, ws, connected: true, hand: [], out: false, place: 0 };
+  const p = { id: newId(), token: crypto.randomBytes(12).toString('hex'), name, ws, connected: true, ready: false, hand: [], out: false, place: 0 };
   room.players.push(p);
   if (!room.hostId) room.hostId = p.id;
   ws.room = room; ws.pid = p.id;
@@ -135,6 +135,11 @@ function handle(ws, m) {
       for (const q of room.players) if (q.ws) send(q.ws, { t: 'react', pid: p.id, name: p.name, e: m.e });
       return;
     }
+    case 'ready': {                       // lobby only: a player marks themselves ready / not ready
+      if (room.phase !== 'lobby') return;
+      p.ready = !!m.on;
+      return broadcast(room);
+    }
     case 'setGame': {
       if (!host || room.phase !== 'lobby') return err(ws, 'Only the host can change the game in the lobby.');
       const e = games.get(m.game);
@@ -180,6 +185,7 @@ function handle(ws, m) {
       room.engine.reset(room);
       room.phase = 'lobby'; room.g = null;
       room.players = room.players.filter(q => q.connected);
+      room.players.forEach(q => { q.ready = false; });
       return broadcast(room);
     }
     case 'leave': {

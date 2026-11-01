@@ -1,7 +1,7 @@
 import type { GameId } from '../../games';
 
 export type Route =
-  | { k: 'home' } | { k: 'games' } | { k: 'game'; id: GameId } | { k: 'profile'; hint?: string }
+  | { k: 'home' } | { k: 'games' } | { k: 'game'; id: GameId } | { k: 'create'; id: GameId } | { k: 'join' } | { k: 'profile'; hint?: string }
   | { k: 'settings' } | { k: 'rules' } | { k: 'server' } | { k: 'design' };
 
 export type Nav = { push: (r: Route) => void; pop: () => void; reset: () => void };

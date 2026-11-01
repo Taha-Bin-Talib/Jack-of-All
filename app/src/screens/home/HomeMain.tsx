@@ -1,17 +1,15 @@
 import React from 'react';
-import { ScrollView, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
+import { ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { AppText, Icons, IconButton, PlayerAvatar, PrimaryButton, ScreenContainer, SecondaryButton, SectionHeading, GameCard, borders, colors, radii, sizes, spacing } from '../../design';
 import { fontFamily } from '../../design/typography';
 import { GAME_IDS, GAMES } from '../../games';
-import { PressNote, WaitNote } from './parts';
+import { PressNote } from './parts';
 import type { Ctx } from './types';
 
 export default function HomeMain({ c }: { c: Ctx }) {
   const { width } = useWindowDimensions();
   const cardW = Math.min(300, Math.round((Math.min(width, sizes.maxContent + 40) - sizes.gutter) * 0.78));
-  const [code, setCode] = React.useState('');
   const last = GAMES[c.lastGame];
-  const needName = () => { if (!c.name.trim()) { c.nav.push({ k: 'profile', hint: 'Choose a name so your friends can see who is at the table.' }); return true; } return false; };
   return (
     <ScreenContainer scroll safe={false} contentStyle={{ paddingBottom: spacing.giant }}>
       {/* header */}
@@ -48,14 +46,8 @@ export default function HomeMain({ c }: { c: Ctx }) {
 
       {/* join a room */}
       <SectionHeading title="Join a friend" />
-      <AppText variant="bodySm" tone="muted" style={{ marginBottom: spacing.md }}>Got a four-letter room code? Enter it to take your seat.</AppText>
-      <View style={st.joinRow}>
-        <TextInput value={code} onChangeText={t => setCode(t.toUpperCase().replace(/[^A-Z]/g, ''))} placeholder="CODE" placeholderTextColor={colors.textMuted}
-          autoCapitalize="characters" autoCorrect={false} maxLength={4} style={st.code} accessibilityLabel="Room code" />
-        <SecondaryButton title="Join room" fullWidth={false} style={{ flex: 1 }} disabled={code.length !== 4 || c.busy}
-          onPress={() => { if (!needName()) c.join(code); }} />
-      </View>
-      <WaitNote busy={c.busy} />
+      <AppText variant="bodySm" tone="muted" style={{ marginBottom: spacing.md }}>Got a four-letter room code? Take your seat at their table.</AppText>
+      <SecondaryButton title="Enter room code" onPress={() => c.nav.push({ k: 'join' })} />
     </ScreenContainer>
   );
 }

@@ -7,6 +7,8 @@ import { GAME_IDS, GameId } from '../games';
 import HomeMain from './home/HomeMain';
 import GamesList from './home/GamesList';
 import GameInfo from './home/GameInfo';
+import CreateRoom from './home/CreateRoom';
+import JoinRoom from './home/JoinRoom';
 import Profile from './home/Profile';
 import { Rules, Server, Settings } from './home/Settings';
 import type { Ctx, Route } from './home/types';
@@ -41,6 +43,8 @@ export default function Home() {
   switch (r.k) {
     case 'games': return <GamesList c={c} />;
     case 'game': return <GameInfo key={r.id} c={c} id={r.id} />;
+    case 'create': return <CreateRoom c={c} id={r.id} />;
+    case 'join': return <JoinRoom c={c} />;
     case 'profile': return <Profile c={c} hint={r.hint} />;
     case 'settings': return <Settings c={c} />;
     case 'rules': return <Rules c={c} />;

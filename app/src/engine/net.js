@@ -9,7 +9,7 @@ function roomView(room, p) {
   return {
     code: room.code, game: room.game, gameName: room.engine.name,
     hostId: room.hostId, settings: room.settings, phase: room.phase,
-    players: room.players.map(q => ({ id: q.id, name: q.name, connected: q.connected })),
+    players: room.players.map(q => ({ id: q.id, name: q.name, connected: q.connected, ready: !!q.ready })),
     you: { id: p.id },
     g: room.phase === 'lobby' ? null : room.engine.view(room, p),
   };

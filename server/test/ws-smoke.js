@@ -13,6 +13,8 @@ server.listen(3555, async () => {
   b.send(JSON.stringify({ t: 'join', name: 'Bee', code })); c.send(JSON.stringify({ t: 'join', name: 'Cee', code }));
   await wait(() => a.st.players.length === 3);
   b.send(JSON.stringify({ t: 'start' })); await wait(() => b.msgs.some(m => m.t === 'error'));   // non-host refused
+  b.send(JSON.stringify({ t: 'ready', on: true })); await wait(() => a.st.players.find(p => p.name === 'Bee').ready === true);
+  b.send(JSON.stringify({ t: 'ready', on: false })); await wait(() => a.st.players.find(p => p.name === 'Bee').ready === false);
   a.send(JSON.stringify({ t: 'setGame', game: 'jackthief' })); await wait(() => a.st.game === 'jackthief');
   a.send(JSON.stringify({ t: 'settings', key: 'direction', value: 'ccw' })); await wait(() => a.st.settings.direction === 'ccw');
   a.send(JSON.stringify({ t: 'start' })); await wait(() => a.st.phase === 'playing');

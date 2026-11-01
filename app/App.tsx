@@ -65,4 +65,4 @@ function Root() {
 export default function App() {
   return <SafeAreaProvider><Root /></SafeAreaProvider>;
 }
-const st = StyleSheet.create({ root: { flex: 1, backgroundColor: C.bg }, banner: { backgroundColor: C.danger, color: '#fff', textAlign: 'center', padding: 6, fontWeight: '700' } });
+const st = StyleSheet.create({ root: { flex: 1, backgroundColor: C.bg }, banner: { backgroundColor: '#762F36', color: '#F1E8D5', textAlign: 'center', padding: 8, fontFamily: 'DMSans_600SemiBold', fontSize: 14 } });
