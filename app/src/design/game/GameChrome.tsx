@@ -1,5 +1,5 @@
 import React from 'react';
-import { Animated, Easing, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Animated, Easing, Modal, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { borders, colors, radii, sizes, spacing } from '../tokens';
 import { fontFamily } from '../typography';
@@ -12,11 +12,11 @@ import { useNet } from '../../net';
 
 /* ── GameActionButton: the in-game button. One accent per game state; 44dp+ tall. ── */
 export function GameActionButton({ title, onPress, kind = 'primary', disabled, style, flex }: { title: string; onPress: () => void; kind?: 'primary' | 'danger' | 'quiet'; disabled?: boolean; style?: any; flex?: boolean }) {
-  const bg = kind === 'primary' ? colors.gold : kind === 'danger' ? colors.oxblood : 'transparent';
-  const fg = kind === 'primary' ? colors.onGold : colors.text;
+  const bg = kind === 'primary' ? (disabled ? 'rgba(189,152,87,0.16)' : colors.gold) : kind === 'danger' ? colors.oxblood : 'transparent';
+  const fg = kind === 'primary' ? (disabled ? colors.textMuted : colors.onGold) : colors.text;
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={title} accessibilityState={{ disabled: !!disabled }} onPress={disabled ? undefined : onPress}
-      style={({ pressed }) => [st.btn, { backgroundColor: bg, opacity: disabled ? 0.38 : pressed ? 0.82 : 1 }, kind === 'quiet' && { borderWidth: borders.hair, borderColor: colors.lineStrong }, flex && { flex: 1, paddingHorizontal: spacing.xs }, style]}>
+      style={({ pressed }) => [st.btn, { backgroundColor: bg, opacity: disabled && kind !== 'primary' ? 0.4 : pressed ? 0.82 : 1 }, disabled && kind === 'primary' && { borderWidth: borders.hair, borderColor: colors.line }, kind === 'quiet' && { borderWidth: borders.hair, borderColor: colors.lineStrong }, flex && { flex: 1, paddingHorizontal: spacing.xs }, style]}>
       <AppText variant="button" numberOfLines={1} style={{ color: fg }}>{title}</AppText>
     </Pressable>
   );
@@ -38,6 +38,8 @@ export function GameHeader({ title, subtitle, accent = colors.gold, onMenu }: { 
 /* ── ScoreBoard: public standings — who still holds cards, who is safe. Only public information. ── */
 export type ScoreRow = { id: string; name: string; count?: number; out?: boolean; active?: boolean; me?: boolean; tag?: string; away?: boolean };
 export function ScoreBoard({ rows, label = 'Cards left' }: { rows: ScoreRow[]; label?: string }) {
+  const { height } = useWindowDimensions();
+  if (height < 700) return null;                 // short phones: seats already show every count
   return (
     <View style={{ marginBottom: spacing.xs }} accessibilityLabel={label}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.lg, gap: spacing.sm }}>
@@ -107,7 +109,7 @@ export function VisibilityTag({ kind, text }: { kind: 'public' | 'private'; text
   return (
     <View style={[st.vis, { borderColor: priv ? colors.gold : colors.line }]}>
       <View style={[st.visDot, { backgroundColor: priv ? colors.gold : colors.textMuted }]} />
-      <AppText variant="label" style={{ color: priv ? colors.gold : colors.textMuted, fontSize: 10, lineHeight: 12 }}>{text ?? (priv ? 'Private · only you' : 'Public · everyone')}</AppText>
+      <AppText variant="label" style={{ color: priv ? colors.gold : colors.textMuted, fontSize: 11, lineHeight: 13 }}>{text ?? (priv ? 'Private · only you' : 'Public · everyone')}</AppText>
     </View>
   );
 }

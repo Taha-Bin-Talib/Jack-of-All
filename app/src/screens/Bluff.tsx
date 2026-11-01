@@ -94,7 +94,7 @@ export default function Bluff({ room }: { room: RoomState }) {
               <AppText variant="bodySm" style={{ textAlign: 'center' }}><AppText variant="bodySm" tone="gold">1</AppText>  Tap 1 to 4 cards{sel.length ? ` · ${sel.length} selected` : ''}     <AppText variant="bodySm" tone="gold">2</AppText>  Say what they are (you may bluff)</AppText>
               <View style={st.ranks}>
                 {RANKS.map(r => (
-                  <Pressable key={r} accessibilityRole="button" accessibilityState={{ selected: rk === r }} onPress={() => setRk(r)} style={[st.chip, rk === r && st.chipOn]}>
+                  <Pressable key={r} hitSlop={5} accessibilityLabel={`Declare ${r}`} accessibilityRole="button" accessibilityState={{ selected: rk === r }} onPress={() => setRk(r)} style={[st.chip, rk === r && st.chipOn]}>
                     <AppText style={{ fontFamily: fontFamily.display, fontSize: 16, color: rk === r ? colors.onGold : colors.text }}>{rankLabel(r)}</AppText>
                   </Pressable>
                 ))}

@@ -68,6 +68,15 @@ Cards: white face, rank horizontal + small suit top-left, one big centre suit, r
 ## Gameplay interfaces (Stage 4 — done)
 Game logic, server and protocol untouched. Shared components live in `app/src/design/game/` (exported from `design/index.ts`): `GameTable` (oval table; `tone` = thulla|bluff|jack sets the rim), `PlayerStatus` (seat: hidden-card fan + avatar + name + count + countdown), `TurnIndicator`, `CardHand` (flat hand grid, legal/selected/glow, `onInvalid`, `court` = Jacks as court cards), `GameHeader`, `ScoreBoard`, `GameActionButton`, `GamePanel`, `TurnTimer`, `EventToast`, `NoticeBar` + `useGameNotice` (also shows server rejections), `VisibilityTag` (public vs private info), `FlipCard`, `GameResultModal`, `GameSettingsMenu` (rules, room code, leave). `PlayingCard` (design/components) is the only card renderer (SVG suits, glow/disabled/court/faceDown states, accessibility labels like "Queen of Hearts"); `JackFace.tsx` draws the court Jack. `screens/GameShell.tsx` wraps header + game + result + menu; screens Thulla/Bluff/Jack keep their original state wiring. Old `ui.tsx` Card/Btn/Toast and `screens/Common.tsx` were removed; `theme.ts` (`C`) now maps to the new palette for leftovers (Chat). Reanimated is not installed; animations use the built-in Animated API.
 
+## Final polish & QA (Stage 5 — done)
+- Icons/splash regenerated (gold spade on forest green); `app.json` backgrounds #142D26.
+- New: `design/components/TextField.tsx` (gold focus border, invalid state), `design/components/Motion.tsx` (`Appear`, `useReduceMotion`). Used for Profile, Server and Chat inputs; Home route changes and the lobby/home switch fade in; lobby seats/rows ease in. Reduce-motion is respected.
+- Disabled primary buttons are visibly distinct (faint gold + hairline, muted text). Selected cards get a ✓ badge (not colour-only). `PlayingCard` is memoised.
+- Game screens are wrapped in a ScrollView (`GameShell`) so 320x568 phones scroll instead of overlapping; ScoreBoard hides under 700px height; table min-height 250 there.
+- Chat restyled with the design tokens (icon FAB, oxblood badge, DM Sans).
+- Touch targets: text links, Remove, Bluff rank chips enlarged / hit-slop. Extra accessibility labels.
+- Not done: Reanimated (not installed), landscape, real-device testing.
+
 ## Play now (offline vs 3 bots)
 Home screen button "Play now — offline vs 3 bots" starts the selected game with the user + Bot Ali/Sara/Zain (4 players, no internet). Implemented in `net.ts` (`playOffline`, `localAct`, `stopLocal`): the copied server engine and `rooms.js` run inside the app, the human gets a fake ws object, bots are players with `connected:false` (the engines' existing auto-play for disconnected players, BOT_MS tuned to ~1.2–1.8 s). `net.local` flag hides chat/reconnect banner; rematch restarts immediately with the same bots.
 

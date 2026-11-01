@@ -33,7 +33,7 @@ export default function HomeMain({ c }: { c: Ctx }) {
         <PrimaryButton title="Play now" size="lg" onPress={() => c.playOffline(c.lastGame)} style={{ marginTop: spacing.xl }} />
         <View style={st.under}>
           <AppText variant="bodySm" tone="muted" style={{ flex: 1 }}>{last.name} · vs 3 bots</AppText>
-          <AppText variant="bodySm" tone="gold" onPress={() => c.nav.push({ k: 'games' })} suppressHighlighting>Choose another game</AppText>
+          <AppText variant="bodySm" tone="gold" onPress={() => c.nav.push({ k: 'games' })} suppressHighlighting accessibilityRole="link" style={{ paddingVertical: spacing.md }}>Choose another game</AppText>
         </View>
       </View>
 

@@ -19,3 +19,5 @@ export type { Geo, Pt, Flight } from './game/GameTable';
 export { CardHand } from './game/CardHand';
 export { GameActionButton, GamePanel, GameHeader, ScoreBoard, TurnTimer, EventToast, useGameNotice, NoticeBar, VisibilityTag, FlipCard, GameResultModal, GameSettingsMenu } from './game/GameChrome';
 export type { ScoreRow } from './game/GameChrome';
+export { TextField } from './components/TextField';
+export { Appear, useReduceMotion } from './components/Motion';

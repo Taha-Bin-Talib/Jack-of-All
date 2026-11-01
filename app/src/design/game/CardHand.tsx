@@ -40,7 +40,7 @@ export function CardHand({ cards, legal, selected, glow, onTap, onInvalid, anima
   const maxH = 3 * (ch + gap) + 22;
   return (
     <View onLayout={e => setW(e.nativeEvent.layout.width)} style={{ paddingBottom: local ? 10 : 58, minHeight: ch + (local ? 30 : 78) }}>
-      {rows > 3 ? <ScrollView style={{ maxHeight: maxH }} showsVerticalScrollIndicator={false}>{grid}</ScrollView> : grid}
+      {rows > 3 ? <ScrollView style={{ maxHeight: maxH }} nestedScrollEnabled showsVerticalScrollIndicator={false}>{grid}</ScrollView> : grid}
     </View>
   );
 }

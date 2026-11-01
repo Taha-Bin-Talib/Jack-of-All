@@ -13,11 +13,11 @@ function Base({ title, onPress, disabled, loading, size = 'md', fullWidth = true
       onPress={off ? undefined : onPress}
       style={({ pressed }) => [
         st.base, { height: sizes.button[size] }, fullWidth ? st.full : st.auto,
-        primary ? [st.primary, shadows.sm] : st.secondary,
+        primary ? [st.primary, off ? st.primaryOff : shadows.sm] : st.secondary,
         pressed && !off && (primary ? st.primaryDown : st.secondaryDown),
-        off && { opacity: 0.4 }, style,
+        off && !primary && { opacity: 0.45 }, style,
       ]}>
-      {loading ? <ActivityIndicator color={primary ? colors.onGold : colors.gold} /> : <AppText variant="button" tone={primary ? 'onGold' : 'primary'}>{title}</AppText>}
+      {loading ? <ActivityIndicator color={primary ? colors.onGold : colors.gold} /> : <AppText variant="button" tone={primary ? (off ? 'muted' : 'onGold') : 'primary'}>{title}</AppText>}
     </Pressable>
   );
 }
@@ -42,6 +42,7 @@ const st = StyleSheet.create({
   base: { borderRadius: radii.md, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xl },
   full: { alignSelf: 'stretch' }, auto: { alignSelf: 'flex-start' },
   primary: { backgroundColor: colors.gold },
+  primaryOff: { backgroundColor: 'rgba(189,152,87,0.16)', borderWidth: borders.hair, borderColor: colors.line },
   primaryDown: { backgroundColor: '#A98549' },
   secondary: { backgroundColor: 'transparent', borderWidth: borders.hair, borderColor: colors.lineStrong },
   secondaryDown: { backgroundColor: 'rgba(189,152,87,0.12)' },

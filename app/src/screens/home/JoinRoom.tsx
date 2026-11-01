@@ -21,7 +21,7 @@ export default function JoinRoom({ c }: { c: Ctx }) {
       <PrimaryButton title="Join room" size="lg" disabled={!ok} loading={c.busy} onPress={go} style={{ marginTop: spacing.xl }} />
       <AppText variant="bodySm" tone="muted" style={{ textAlign: 'center', marginTop: spacing.lg }}>
         {c.name ? <>Joining as <AppText variant="bodySm">{c.name}</AppText> · </> : null}
-        <AppText variant="bodySm" tone="gold" onPress={() => c.nav.push({ k: 'profile' })}>{c.name ? 'Change name' : 'Set your name'}</AppText>
+        <AppText variant="bodySm" tone="gold" onPress={() => c.nav.push({ k: 'profile' })} accessibilityRole="link" style={{ paddingVertical: spacing.md }}>{c.name ? 'Change name' : 'Set your name'}</AppText>
       </AppText>
       <WaitNote busy={c.busy} what="join" />
     </ScreenContainer>

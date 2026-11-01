@@ -1,6 +1,6 @@
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
-import { AppHeader, AppText, PrimaryButton, ScreenContainer, SecondaryButton, borders, colors, fontFamilyRef, radii, sizes, spacing } from '../../design';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { AppHeader, AppText, PrimaryButton, ScreenContainer, TextField, SecondaryButton, borders, colors, fontFamilyRef, radii, sizes, spacing } from '../../design';
 import { GAME_IDS, GAMES } from '../../games';
 import { getSnap, setServer } from '../../net';
 import type { Ctx } from './types';
@@ -47,8 +47,7 @@ export function Server({ c }: { c: Ctx }) {
     <ScreenContainer scroll safe={false}>
       <AppHeader title="Server address" onBack={c.nav.pop} />
       <AppText variant="bodySm" tone="muted" style={{ marginVertical: spacing.lg }}>Normally you never need to change this. Use wss://your-server for a hosted server.</AppText>
-      <TextInput value={url} onChangeText={setUrl} autoCapitalize="none" autoCorrect={false} placeholderTextColor={colors.textMuted} accessibilityLabel="Server address"
-        style={{ height: sizes.button.md, borderRadius: radii.md, backgroundColor: colors.surface, borderWidth: borders.hair, borderColor: colors.line, color: colors.text, paddingHorizontal: spacing.lg, fontFamily: fontFamilyRef.regular, fontSize: 15 }} />
+      <TextField value={url} onChangeText={setUrl} autoCapitalize="none" autoCorrect={false} accessibilityLabel="Server address" style={{ fontSize: 15 }} />
       <PrimaryButton title="Save" style={{ marginTop: spacing.xl }} onPress={() => { setServer(url); c.nav.pop(); }} />
     </ScreenContainer>
   );

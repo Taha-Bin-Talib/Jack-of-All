@@ -35,7 +35,7 @@ export default function GameInfo({ c, id }: { c: Ctx; id: GameId }) {
           <AppText variant="bodySm" tone="muted" style={{ flex: 1 }}>{t}</AppText>
         </View>
       ))}
-      <AppText variant="bodySm" tone="gold" onPress={() => setAll(!all)} style={{ marginTop: spacing.sm }}>{all ? 'Show fewer' : 'Read all the rules'}</AppText>
+      <AppText variant="bodySm" tone="gold" onPress={() => setAll(!all)} accessibilityRole="button" style={{ marginTop: spacing.xs, paddingVertical: spacing.md }}>{all ? 'Show fewer' : 'Read all the rules'}</AppText>
 
       <SectionHeading title="Take a seat" />
       <PrimaryButton title="Play now" size="lg" onPress={() => c.playOffline(id)} />

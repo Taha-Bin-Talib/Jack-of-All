@@ -8,7 +8,7 @@ import Home from './src/screens/Home';
 import Lobby from './src/screens/Lobby';
 import GameShell from './src/screens/GameShell';
 import Chat from './src/Chat';
-import { useAppFonts } from './src/design';
+import { Appear, useAppFonts } from './src/design';
 
 function GameKeepAwake() { useKeepAwake(); return null; }
 
@@ -43,7 +43,7 @@ function Root() {
     <View style={[st.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <StatusBar barStyle="light-content" />
       {room && !net.local && net.conn !== 'online' && <Text style={st.banner} onPress={reconnectNow}>Reconnecting… tap to retry</Text>}
-      {body}
+      <Appear key={room ? 'lobby' : 'home'} duration={240} style={{ flex: 1 }}>{body}</Appear>
       {room && net.ready && !net.local && <Chat />}
     </View>
   );

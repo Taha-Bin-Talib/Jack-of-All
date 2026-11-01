@@ -113,7 +113,7 @@ export default function Jack({ room }: { room: RoomState }) {
       {thrown.length > 0 && (
         <View style={st.thrown}>
           <AppText variant="label" tone="muted" style={{ textAlign: 'center', marginBottom: 2 }}>Thrown away · public</AppText>
-          <ScrollView style={{ maxHeight: 56 }} contentContainerStyle={{ flexDirection: 'row', flexWrap: 'wrap', gap: 2, justifyContent: 'center' }}>
+          <ScrollView style={{ maxHeight: 56 }} nestedScrollEnabled contentContainerStyle={{ flexDirection: 'row', flexWrap: 'wrap', gap: 2, justifyContent: 'center' }}>
             {thrown.map((c, i) => <PlayingCard key={c + i} id={c} width={20} />)}
           </ScrollView>
         </View>

@@ -1,5 +1,6 @@
 import React from 'react';
-import { Animated, Easing, LayoutChangeEvent, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, LayoutChangeEvent, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { useReduceMotion } from '../components/Motion';
 import { colors, borders } from '../tokens';
 import { fontFamily } from '../typography';
 import { PlayingCard } from '../components/PlayingCard';
@@ -27,6 +28,7 @@ export function GameTable({ players, meId, tone = 'thulla', children }: { player
   const [box, setBox] = React.useState({ w: 0, h: 0 });
   const onLayout = (e: LayoutChangeEvent) => setBox({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height });
   const n = players.length, my = Math.max(0, players.findIndex(p => p.id === meId)), t = RIM[tone];
+  const short = useWindowDimensions().height < 700;
   let body: React.ReactNode = null;
   if (box.w > 0 && box.h > 0) {
     const u = Math.min(box.w / UW, box.h / UH), cx = box.w / 2, cy = box.h / 2;
@@ -46,7 +48,7 @@ export function GameTable({ players, meId, tone = 'thulla', children }: { player
       </>
     );
   }
-  return <View style={{ flex: 1, minHeight: 210 }} onLayout={onLayout}>{body}</View>;
+  return <View style={{ flex: 1, minHeight: short ? 250 : 210 }} onLayout={onLayout}>{body}</View>;
 }
 
 function useCountdown(ms: number | null | undefined) {
@@ -82,11 +84,11 @@ export function PlayerStatus({ geo, i, name, count, active, off, out, me, badge,
         <View style={[active && st.glow, { borderRadius: d }]}><PlayerAvatar name={name} diameter={d} active={active} online={undefined} /></View>
         <View style={[st.pill, { paddingHorizontal: u * 1.8, paddingVertical: u * 0.5, borderRadius: u * 1.6, marginTop: -u * 0.8 }, active && st.pillOn]}>
           <Text numberOfLines={1} style={{ color: colors.text, fontFamily: fontFamily.semibold, fontSize: Math.max(11, u * 3.2), maxWidth: u * 19 }}>{me ? 'You' : name}{off ? ' · away' : ''}</Text>
-          <Text numberOfLines={1} style={{ color: out ? colors.table.good : colors.textMuted, fontFamily: fontFamily.regular, fontSize: Math.max(10, u * 2.7) }}>{sub}</Text>
+          <Text numberOfLines={1} style={{ color: out ? colors.table.good : colors.textMuted, fontFamily: fontFamily.regular, fontSize: Math.max(11, u * 2.7) }}>{sub}</Text>
         </View>
         {timerMs != null && timerMs > 0 && (
           <View style={{ alignItems: 'center', marginTop: 2 }}>
-            <Text style={{ color: hot ? colors.table.bad : colors.gold, fontFamily: fontFamily.semibold, fontSize: Math.max(10, u * 2.7) }}>{Math.floor(secs / 60)}:{String(secs % 60).padStart(2, '0')}</Text>
+            <Text style={{ color: hot ? colors.table.bad : colors.gold, fontFamily: fontFamily.semibold, fontSize: Math.max(11, u * 2.7) }}>{Math.floor(secs / 60)}:{String(secs % 60).padStart(2, '0')}</Text>
             <View style={{ width: u * 12, height: Math.max(3, u * 0.6), borderRadius: 2, backgroundColor: 'rgba(241,232,213,.18)', overflow: 'hidden' }}>
               <View style={{ height: '100%', width: `${Math.min(1, left / total) * 100}%`, backgroundColor: hot ? colors.table.bad : colors.gold }} />
             </View>
@@ -100,13 +102,15 @@ export function PlayerStatus({ geo, i, name, count, active, off, out, me, badge,
 /* TurnIndicator — a gold pointer on the rim aimed at whoever must act; it gently pulses */
 export function TurnIndicator({ geo, i }: { geo: Geo; i: number }) {
   const pulse = React.useRef(new Animated.Value(0)).current;
+  const reduce = useReduceMotion();
   React.useEffect(() => {
+    if (reduce) { pulse.setValue(1); return; }
     const loop = Animated.loop(Animated.sequence([
       Animated.timing(pulse, { toValue: 1, duration: 700, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
       Animated.timing(pulse, { toValue: 0, duration: 700, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
     ]));
     loop.start(); return () => loop.stop();
-  }, []);
+  }, [reduce]);
   if (i < 0) return null;
   const a = geo.deg(i) * Math.PI / 180, u = geo.u;
   const x = geo.cx + ORBIT.x * u * Math.cos(a), y = geo.cy + ORBIT.y * u * Math.sin(a);

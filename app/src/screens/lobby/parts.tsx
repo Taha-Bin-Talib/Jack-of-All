@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pressable, Share, StyleSheet, View, useWindowDimensions } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
-import { AppText, PlayerAvatar, PrimaryButton, SecondaryButton, borders, colors, radii, sizes, spacing, Icons } from '../../design';
+import { Appear, AppText, PlayerAvatar, PrimaryButton, SecondaryButton, borders, colors, radii, sizes, spacing, Icons } from '../../design';
 import { fontFamily } from '../../design/typography';
 import { Suit } from '../../ui';
 import type { Player } from '../../types';
@@ -48,14 +48,14 @@ export function LobbyTable({ players, meId, hostId, seats, suit }: { players: Pl
         const a = Math.PI / 2 + (k * 2 * Math.PI) / slots.length;
         const x = cx + rx * Math.cos(a), y = cy + ry * Math.sin(a);
         return (
-          <View key={p ? p.id : 'empty' + k} style={[st.seat, { left: x - 36, top: y - 28 }]}>
+          <Appear key={p ? p.id : 'empty' + k} dy={6} duration={260} style={[st.seat, { left: x - 36, top: y - 28 }]}>
             {p ? (
               <View style={{ opacity: p.connected ? 1 : 0.45 }}>
                 <PlayerAvatar name={p.name} size="md" active={p.id === hostId} online={p.connected} />
               </View>
             ) : <View style={st.empty} accessibilityLabel="Open seat" />}
             <AppText variant="caption" numberOfLines={1} tone={p ? 'primary' : 'muted'} style={st.seatName}>{p ? (p.id === meId ? 'You' : p.name) : 'Open'}</AppText>
-          </View>
+          </Appear>
         );
       })}
     </View>
@@ -67,7 +67,7 @@ export function PlayerRow({ p, meId, hostId, canKick, onKick }: { p: Player; meI
   const host = p.id === hostId, me = p.id === meId, ready = isReady(p, hostId);
   const status = !p.connected ? { t: 'Away', c: colors.textMuted } : ready ? { t: host ? 'Host' : 'Ready', c: colors.gold } : { t: 'Not ready', c: colors.textMuted };
   return (
-    <View style={st.row}>
+    <Appear dy={8} style={st.row}>
       <View style={{ opacity: p.connected ? 1 : 0.45 }}><PlayerAvatar name={p.name} size="md" online={p.connected} /></View>
       <View style={{ flex: 1 }}>
         <AppText variant="title" numberOfLines={1}>{p.name}{me ? '  (you)' : ''}</AppText>
@@ -76,8 +76,8 @@ export function PlayerRow({ p, meId, hostId, canKick, onKick }: { p: Player; meI
         </AppText>
       </View>
       {!host && p.connected && <View style={[st.dot, { backgroundColor: ready ? colors.gold : 'transparent', borderColor: ready ? colors.gold : colors.line }]} />}
-      {canKick && !me && <AppText variant="bodySm" onPress={onKick} style={{ color: '#E2B1B6', paddingLeft: spacing.md, paddingVertical: spacing.sm }} accessibilityRole="button">Remove</AppText>}
-    </View>
+      {canKick && !me && <AppText variant="bodySm" onPress={onKick} style={{ color: '#E2B1B6', paddingLeft: spacing.md, paddingVertical: spacing.md }} accessibilityRole="button" accessibilityLabel={`Remove ${p.name}`}>Remove</AppText>}
+    </Appear>
   );
 }
 

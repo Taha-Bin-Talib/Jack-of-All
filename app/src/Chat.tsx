@@ -1,6 +1,6 @@
 import React from 'react';
-import { Animated, Easing, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
-import { C } from './theme';
+import { Animated, Easing, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { AppText, Icons, TextField, borders, colors, fontFamily, radii, spacing } from './design';
 import { onReact, send, useNet } from './net';
 
 const REACTS = ['😂', '😢', '😉', '😡', '😮', '👏', '🔥', '👍'];
@@ -37,23 +37,23 @@ export default function Chat() {
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} pointerEvents="box-none" style={st.avoid}>
           <View style={[st.panel, { width: Math.min(340, width - 20) }]}>
             <View style={st.reacts}>
-              {REACTS.map(e => <Pressable key={e} style={st.rbtn} onPress={() => send({ t: 'react', e })}><Text style={{ fontSize: 22 }}>{e}</Text></Pressable>)}
+              {REACTS.map(e => <Pressable key={e} style={({ pressed }) => [st.rbtn, pressed && { backgroundColor: colors.line }]} hitSlop={2} accessibilityRole="button" accessibilityLabel={`React ${e}`} onPress={() => send({ t: 'react', e })}><Text style={{ fontSize: 22 }}>{e}</Text></Pressable>)}
             </View>
             <ScrollView ref={scroller} style={st.log} contentContainerStyle={{ padding: 8 }}>
-              {net.chat.length === 0 && <Text style={st.empty}>No messages yet — say hi!</Text>}
+              {net.chat.length === 0 && <AppText variant="bodySm" tone="muted" style={st.empty}>No messages yet — say hello.</AppText>}
               {net.chat.map((m, i) => (
-                <Text key={i} style={st.msg}><Text style={[st.who, m.id === me && { color: '#9fe6b4' }]}>{m.name}: </Text>{m.text}</Text>
+                <Text key={i} style={st.msg}><Text style={[st.who, m.id === me && { color: colors.text }]}>{m.id === me ? 'You' : m.name}  </Text>{m.text}</Text>
               ))}
             </ScrollView>
             <View style={st.form}>
-              <TextInput value={text} onChangeText={setText} onSubmitEditing={submit} maxLength={120} placeholder="Say something…" placeholderTextColor={C.dim} style={st.input} returnKeyType="send" />
-              <Pressable onPress={submit} style={st.send}><Text style={{ color: '#1d1405', fontWeight: '800' }}>Send</Text></Pressable>
+              <TextField value={text} onChangeText={setText} onSubmitEditing={submit} maxLength={120} placeholder="Say something…" style={st.input} returnKeyType="send" accessibilityLabel="Chat message" />
+              <Pressable onPress={submit} disabled={!text.trim()} accessibilityRole="button" accessibilityLabel="Send message" style={({ pressed }) => [st.send, !text.trim() && { opacity: 0.4 }, pressed && { opacity: 0.8 }]}><Text style={st.sendT}>Send</Text></Pressable>
             </View>
           </View>
         </KeyboardAvoidingView>
       )}
-      <Pressable onPress={() => setOpen(o => !o)} style={st.fab} accessibilityLabel="Chat">
-        <Text style={{ fontSize: 24 }}>💬</Text>
+      <Pressable onPress={() => setOpen(o => !o)} style={({ pressed }) => [st.fab, pressed && { opacity: 0.85 }]} accessibilityRole="button" accessibilityLabel={unread > 0 ? `Chat, ${unread} unread` : open ? 'Close chat' : 'Open chat'} accessibilityState={{ expanded: open }}>
+        {open ? <Icons.Close size={22} color={colors.gold} /> : <Icons.Chat size={22} color={colors.gold} />}
         {unread > 0 && <View style={st.badge}><Text style={st.badgeT}>{unread}</Text></View>}
       </Pressable>
     </>
@@ -74,19 +74,20 @@ function FloatEmoji({ e, name, x }: Omit<Float, 'key'>) {
 }
 
 const st = StyleSheet.create({
-  fab: { position: 'absolute', right: 14, bottom: 18, width: 54, height: 54, borderRadius: 27, borderWidth: 2.5, borderColor: C.gold, backgroundColor: '#0a3d29', alignItems: 'center', justifyContent: 'center', elevation: 10, shadowColor: '#000', shadowOpacity: 0.5, shadowRadius: 6 },
-  badge: { position: 'absolute', top: -6, right: -6, backgroundColor: '#ff5252', borderRadius: 10, minWidth: 20, height: 20, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
-  badgeT: { color: '#fff', fontSize: 12, fontWeight: '800' },
-  avoid: { position: 'absolute', left: 0, right: 0, bottom: 82, alignItems: 'flex-end', paddingRight: 10 },
-  panel: { backgroundColor: '#0a3d29', borderWidth: 2, borderColor: C.gold, borderRadius: 16, maxHeight: 340, elevation: 12, overflow: 'hidden' },
-  reacts: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 6, paddingTop: 8 },
-  rbtn: { backgroundColor: 'rgba(255,255,255,.08)', borderRadius: 10, paddingHorizontal: 4, paddingVertical: 4 },
+  fab: { position: 'absolute', right: 14, bottom: 18, width: 52, height: 52, borderRadius: 26, borderWidth: borders.hair, borderColor: colors.goldDim, backgroundColor: colors.bgAlt, alignItems: 'center', justifyContent: 'center', elevation: 8, shadowColor: '#000', shadowOpacity: 0.4, shadowRadius: 6, shadowOffset: { width: 0, height: 3 } },
+  badge: { position: 'absolute', top: -4, right: -4, backgroundColor: colors.oxblood, borderRadius: 10, minWidth: 20, height: 20, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, borderWidth: 1.5, borderColor: colors.bg },
+  badgeT: { color: colors.text, fontSize: 11, fontFamily: fontFamily.bold },
+  avoid: { position: 'absolute', left: 0, right: 0, bottom: 80, alignItems: 'flex-end', paddingRight: 10 },
+  panel: { backgroundColor: colors.bgAlt, borderWidth: borders.hair, borderColor: colors.goldDim, borderRadius: radii.lg, maxHeight: 340, elevation: 12, overflow: 'hidden' },
+  reacts: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 8, paddingTop: 10 },
+  rbtn: { backgroundColor: colors.surface, borderRadius: radii.md, paddingHorizontal: 4, paddingVertical: 4 },
   log: { minHeight: 90, maxHeight: 170 },
-  empty: { color: C.dim, textAlign: 'center', marginTop: 12 },
-  msg: { color: '#fff', fontSize: 14, marginVertical: 2 },
-  who: { color: C.gold, fontWeight: '800' },
-  form: { flexDirection: 'row', gap: 6, padding: 8 },
-  input: { flex: 1, minWidth: 0, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,.25)', backgroundColor: 'rgba(0,0,0,.35)', color: '#fff', paddingHorizontal: 10, paddingVertical: 8, fontSize: 16 },
-  send: { backgroundColor: C.gold, borderRadius: 10, paddingHorizontal: 14, justifyContent: 'center' },
-  fname: { color: '#fff', backgroundColor: 'rgba(0,0,0,.6)', borderRadius: 10, paddingHorizontal: 8, fontSize: 12, fontWeight: '700', overflow: 'hidden' },
+  empty: { textAlign: 'center', marginTop: 12 },
+  msg: { color: colors.text, fontSize: 14, lineHeight: 20, marginVertical: 2, fontFamily: fontFamily.regular },
+  who: { color: colors.gold, fontFamily: fontFamily.bold },
+  form: { flexDirection: 'row', gap: spacing.sm, padding: spacing.sm, alignItems: 'center' },
+  input: { flex: 1, minWidth: 0, fontSize: 15, minHeight: 44, paddingVertical: 8 },
+  send: { backgroundColor: colors.gold, borderRadius: radii.md, paddingHorizontal: 16, height: 44, justifyContent: 'center' },
+  sendT: { color: colors.onGold, fontFamily: fontFamily.bold, fontSize: 15 },
+  fname: { color: colors.text, backgroundColor: 'rgba(0,0,0,.6)', borderRadius: 10, paddingHorizontal: 8, fontSize: 12, fontFamily: fontFamily.semibold, overflow: 'hidden' },
 });

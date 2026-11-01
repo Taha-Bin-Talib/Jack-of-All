@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getSnap, playOffline, saveName, savedName, send, useNet } from '../net';
 import DesignPreview from '../design/preview/DesignPreview';
 import { GAME_IDS, GameId } from '../games';
+import { Appear } from '../design';
 import HomeMain from './home/HomeMain';
 import GamesList from './home/GamesList';
 import GameInfo from './home/GameInfo';
@@ -24,6 +25,8 @@ export default function Home() {
   React.useEffect(() => { savedName().then(n => n && setName(n)); AsyncStorage.getItem(LAST).then(g => { if (g && (GAME_IDS as string[]).includes(g)) setLast(g as GameId); }).catch(() => {}); }, []);
   React.useEffect(() => { setBusy(false); }, [net.errSeq, net.room]);
 
+  const prevLen = React.useRef(1);
+  React.useEffect(() => { prevLen.current = stack.length; });
   const pop = React.useCallback(() => setStack(s => (s.length > 1 ? s.slice(0, -1) : s)), []);
   React.useEffect(() => {
     const h = BackHandler.addEventListener('hardwareBackPress', () => { if (stack.length > 1) { pop(); return true; } return false; });
@@ -40,6 +43,7 @@ export default function Home() {
     join: code => { saveName(name.trim()); setBusy(true); send({ t: 'join', code, name: name.trim() }); },
   };
   const r = stack[stack.length - 1];
+  const view = (() => {
   switch (r.k) {
     case 'games': return <GamesList c={c} />;
     case 'game': return <GameInfo key={r.id} c={c} id={r.id} />;
@@ -52,4 +56,7 @@ export default function Home() {
     case 'design': return <DesignPreview onBack={pop} />;
     default: return <HomeMain c={c} />;
   }
+  })();
+  // each screen eases in; going deeper slides in from the right, going back just fades
+  return <Appear key={stack.length + r.k + ((r as any).id || '')} dx={stack.length > prevLen.current ? 18 : 0} duration={200} style={{ flex: 1 }}>{view}</Appear>;
 }

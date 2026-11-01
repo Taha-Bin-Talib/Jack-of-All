@@ -1,5 +1,5 @@
 import React from 'react';
-import { View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { GameActionButton, GameHeader, GameResultModal, GameSettingsMenu, ScoreRow, colors } from '../design';
 import { send } from '../net';
 import { GAMES, GameId } from '../games';
@@ -40,7 +40,9 @@ export default function GameShell({ room, local, onLeave }: { room: RoomState; l
   return (
     <View style={{ flex: 1 }}>
       <GameHeader title={meta?.name || room.gameName} subtitle={sub} accent={ACCENT[room.game]} onMenu={() => setMenu(true)} />
-      {room.game === 'thulla' ? <Thulla room={room} /> : room.game === 'bluff' ? <Bluff room={room} /> : <Jack room={room} />}
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1 }} nestedScrollEnabled keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} overScrollMode="never">
+        {room.game === 'thulla' ? <Thulla room={room} /> : room.game === 'bluff' ? <Bluff room={room} /> : <Jack room={room} />}
+      </ScrollView>
       <GameResultModal visible={!!over} title={title} lines={lines} rows={rows} accent={ACCENT[room.game]}
         actions={<>
           {host || local ? <GameActionButton title={local ? 'Play again' : 'Back to lobby'} onPress={() => send({ t: 'rematch' })} /> : null}
