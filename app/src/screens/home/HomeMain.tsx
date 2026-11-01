@@ -1,17 +1,18 @@
 import React from 'react';
-import { ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
-import { AppText, Icons, IconButton, PlayerAvatar, PrimaryButton, ScreenContainer, SecondaryButton, SectionHeading, GameCard, borders, colors, radii, sizes, spacing } from '../../design';
+import { ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { AppText, GameRow, Icons, IconButton, PlayerAvatar, PrimaryButton, ScreenContainer, borders, colors, radii, sizes, spacing } from '../../design';
 import { fontFamily } from '../../design/typography';
 import { GAME_IDS, GAMES } from '../../games';
 import { PressNote } from './parts';
+import PlaySheet from './PlaySheet';
 import type { Ctx } from './types';
 
 export default function HomeMain({ c }: { c: Ctx }) {
-  const { width } = useWindowDimensions();
-  const cardW = Math.min(300, Math.round((Math.min(width, sizes.maxContent + 40) - sizes.gutter) * 0.78));
-  const last = GAMES[c.lastGame];
+  const { height } = useWindowDimensions();
+  const [play, setPlay] = React.useState(false), [h, setH] = React.useState(0);
+  const rowH = Math.max(96, Math.min(240, Math.floor((h - 2 * spacing.md) / 3)));   // three rows share the space; scroll only if the phone is tiny
   return (
-    <ScreenContainer scroll safe={false} contentStyle={{ paddingBottom: spacing.giant }}>
+    <ScreenContainer safe={false}>
       {/* header */}
       <View style={st.head}>
         <View style={{ flex: 1 }}>
@@ -25,29 +26,25 @@ export default function HomeMain({ c }: { c: Ctx }) {
       </View>
       <View style={st.rule} />
 
-      {/* welcome */}
-      <View style={{ marginTop: spacing.xxl }}>
+      {/* about the games — tap one to see how it plays */}
+      <View style={{ paddingTop: spacing.lg }}>
         <AppText variant="label" tone="gold">{c.name ? `Welcome back, ${c.name}` : 'Welcome to the club'}</AppText>
-        <AppText variant="display" style={{ marginTop: spacing.sm }}>Pull up a chair.</AppText>
-        <AppText variant="body" tone="muted" style={{ marginTop: spacing.md }}>Three classic card games, one table. Host a room for your friends, or sit down against the house any time — no internet needed.</AppText>
-        <PrimaryButton title="Play now" size="lg" onPress={() => c.playOffline(c.lastGame)} style={{ marginTop: spacing.xl }} />
-        <View style={st.under}>
-          <AppText variant="bodySm" tone="muted" style={{ flex: 1 }}>{last.name} · offline, 4 players</AppText>
-          <AppText variant="bodySm" tone="gold" onPress={() => c.nav.push({ k: 'games' })} suppressHighlighting accessibilityRole="link" style={{ paddingVertical: spacing.md }}>Choose another game</AppText>
-        </View>
+        <AppText variant="display" style={{ marginTop: spacing.xs }}>Pull up a chair.</AppText>
+        {height >= 620 && <AppText variant="bodySm" tone="muted" style={{ marginTop: spacing.sm }}>Three classic card games, one table. Tap a game to see how it plays.</AppText>}
+      </View>
+      <View style={{ flex: 1, marginTop: spacing.lg }} onLayout={e => setH(e.nativeEvent.layout.height)}>
+        {h > 0 && (
+          <ScrollView showsVerticalScrollIndicator={false} overScrollMode="never" contentContainerStyle={{ gap: spacing.md }}>
+            {GAME_IDS.map(id => <GameRow key={id} game={GAMES[id]} height={rowH} onPress={() => c.nav.push({ k: 'game', id })} />)}
+          </ScrollView>
+        )}
       </View>
 
-      {/* collection */}
-      <SectionHeading title="The collection" action="All games" onAction={() => c.nav.push({ k: 'games' })} />
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} snapToInterval={cardW + spacing.md} decelerationRate="fast"
-        style={{ marginHorizontal: -sizes.gutter }} contentContainerStyle={{ paddingHorizontal: sizes.gutter, gap: spacing.md }}>
-        {GAME_IDS.map(id => <GameCard key={id} game={GAMES[id]} width={cardW} onPress={() => c.nav.push({ k: 'game', id })} />)}
-      </ScrollView>
-
-      {/* join a room */}
-      <SectionHeading title="Join a friend" />
-      <AppText variant="bodySm" tone="muted" style={{ marginBottom: spacing.md }}>Got a four-letter room code? Take your seat at their table.</AppText>
-      <SecondaryButton title="Enter room code" onPress={() => c.nav.push({ k: 'join' })} />
+      {/* play */}
+      <View style={st.bar}>
+        <PrimaryButton title="Play" size="lg" onPress={() => setPlay(true)} />
+      </View>
+      <PlaySheet c={c} visible={play} onClose={() => setPlay(false)} />
     </ScreenContainer>
   );
 }
@@ -57,6 +54,7 @@ const st = StyleSheet.create({
   mark: { fontFamily: fontFamily.display, fontSize: 22, lineHeight: 28, letterSpacing: 3.5, color: colors.text },
   tag: { fontFamily: fontFamily.displaySemi, fontSize: 13, lineHeight: 18, color: colors.gold, fontStyle: 'italic' },
   rule: { height: borders.hair, backgroundColor: colors.line },
+  bar: { paddingTop: spacing.md, paddingBottom: spacing.lg },
   under: { flexDirection: 'row', alignItems: 'center', marginTop: spacing.md },
   joinRow: { flexDirection: 'row', gap: spacing.md, alignItems: 'center' },
   code: { width: 128, height: sizes.button.md, borderRadius: radii.md, backgroundColor: colors.surface, borderWidth: borders.hair, borderColor: colors.line, color: colors.text, fontFamily: fontFamily.semibold, fontSize: 22, letterSpacing: 6, textAlign: 'center' },

@@ -110,3 +110,8 @@ Home screen button "Play now — offline vs 3 bots" starts the selected game wit
 - First launch (no saved name) shows `screens/home/NamePrompt.tsx` before Home; Profile still lets players rename later.
 - `GameRow` is a full-width card that splits the screen height, so the three games fit without scrolling (narrow layout under 330px wide).
 - Offline opponents are ordinary names (Ali, Sara, Zain; swapped if the player has the same name); no UI text says "bot". Internally they are still `bot0..2` players with `connected:false` in `net.ts`.
+
+## Update: Play flow
+- Home (`screens/home/HomeMain.tsx`): about the three games (tap → game info) with a pinned **Play** button.
+- Play opens `screens/home/PlaySheet.tsx`: Local → pick a game → offline table; Online → Create a room (uses the last game; host switches in the lobby) or Enter room code (opens the Join screen).
+- The old "All games" list route still exists in code but is no longer linked from Home.
