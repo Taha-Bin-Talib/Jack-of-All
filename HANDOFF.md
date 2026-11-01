@@ -113,5 +113,6 @@ Home screen button "Play now — offline vs 3 bots" starts the selected game wit
 
 ## Update: Play flow
 - Home (`screens/home/HomeMain.tsx`): about the three games (tap → game info) with a pinned **Play** button.
-- Play opens `screens/home/PlaySheet.tsx`: Local → pick a game → offline table; Online → Create a room (uses the last game; host switches in the lobby) or Enter room code (opens the Join screen).
+- Play opens `screens/home/PlayDialog.tsx` (a centred modal dialog): Local → pick a game → offline table; Online → Create a room (uses the last game; host switches in the lobby) or Enter room code (opens the Join screen).
 - The old "All games" list route still exists in code but is no longer linked from Home.
+- Buttons are 3D: `Raised` + `TONES` in `design/components/Buttons.tsx` (face on a darker edge, presses down). Used by Primary/Secondary/IconButton/GameActionButton, chat FAB/Send; chips and dialog options use the same raised border look.

@@ -7,19 +7,19 @@ import type { Ctx } from './types';
 
 type Step = 'mode' | 'local' | 'online';
 
-/* "Play" sheet: Local or Online → (Local) pick a game, (Online) create a room or enter a code. */
-export default function PlaySheet({ c, visible, onClose }: { c: Ctx; visible: boolean; onClose: () => void }) {
+/* "Play" dialog: Local or Online → (Local) pick a game, (Online) create a room or enter a code. */
+export default function PlayDialog({ c, visible, onClose }: { c: Ctx; visible: boolean; onClose: () => void }) {
   const [step, setStep] = React.useState<Step>('mode');
   React.useEffect(() => { if (visible) setStep('mode'); }, [visible]);
   const back = () => (step === 'mode' ? onClose() : setStep('mode'));
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={back}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={back}>
+      <View style={st.center}>
       <Pressable style={st.scrim} onPress={onClose} accessibilityLabel="Close" />
-      <View style={st.sheet}>
-        <View style={st.grab} />
+      <View style={st.dialog} accessibilityViewIsModal>
         <View style={st.head}>
           {step !== 'mode' && <IconButton label="Back" onPress={back}><Icons.ChevronLeft /></IconButton>}
-          <AppText variant="h2" style={{ flex: 1 }}>{step === 'mode' ? 'How do you want to play?' : step === 'local' ? 'Choose a game' : 'Play online'}</AppText>
+          <AppText variant="h2" style={{ flex: 1, textAlign: step === 'mode' ? 'center' : 'left' }}>{step === 'mode' ? 'How do you want to play?' : step === 'local' ? 'Choose a game' : 'Play online'}</AppText>
         </View>
 
         {step === 'mode' && (
@@ -44,13 +44,14 @@ export default function PlaySheet({ c, visible, onClose }: { c: Ctx; visible: bo
           </View>
         )}
       </View>
+      </View>
     </Modal>
   );
 }
 
 function Option({ title, note, onPress }: { title: string; note: string; onPress: () => void }) {
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={`${title}. ${note}`} onPress={onPress} style={({ pressed }) => [st.option, pressed && { opacity: 0.85 }]}>
+    <Pressable accessibilityRole="button" accessibilityLabel={`${title}. ${note}`} onPress={onPress} style={({ pressed }) => [st.option, pressed && st.optionDown]}>
       <View style={{ flex: 1 }}>
         <AppText variant="h2">{title}</AppText>
         <AppText variant="bodySm" tone="muted" style={{ marginTop: 2 }}>{note}</AppText>
@@ -63,7 +64,7 @@ function Option({ title, note, onPress }: { title: string; note: string; onPress
 function GameOption({ id, onPress }: { id: GameId; onPress: () => void }) {
   const g = GAMES[id];
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={`${g.name}. ${g.tagline}`} onPress={onPress} style={({ pressed }) => [st.option, { padding: 0, overflow: 'hidden' }, pressed && { opacity: 0.85 }]}>
+    <Pressable accessibilityRole="button" accessibilityLabel={`${g.name}. ${g.tagline}`} onPress={onPress} style={({ pressed }) => [st.option, { padding: 0, overflow: 'hidden' }, pressed && st.optionDown]}>
       <GameArt gameId={id} width={96} height={76} />
       <View style={{ flex: 1, paddingLeft: spacing.lg }}>
         <AppText variant="title" numberOfLines={1}>{g.name}</AppText>
@@ -75,9 +76,10 @@ function GameOption({ id, onPress }: { id: GameId; onPress: () => void }) {
 }
 
 const st = StyleSheet.create({
-  scrim: { flex: 1, backgroundColor: colors.scrim },
-  sheet: { backgroundColor: colors.bgAlt, padding: spacing.xl, paddingBottom: spacing.xxl, borderTopLeftRadius: radii.lg, borderTopRightRadius: radii.lg, borderTopWidth: borders.hair, borderColor: colors.lineStrong },
-  grab: { alignSelf: 'center', width: 40, height: 4, borderRadius: 2, backgroundColor: colors.line, marginBottom: spacing.lg },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.lg },
+  scrim: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, backgroundColor: colors.scrim },
+  dialog: { width: '100%', maxWidth: 400, backgroundColor: colors.bgAlt, padding: spacing.xl, borderRadius: radii.lg, borderWidth: borders.hair, borderColor: colors.goldDim, shadowColor: '#000', shadowOpacity: 0.55, shadowRadius: 24, shadowOffset: { width: 0, height: 12 }, elevation: 16 },
   head: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  option: { flexDirection: 'row', alignItems: 'center', padding: spacing.lg, minHeight: 76, borderRadius: radii.md, backgroundColor: colors.bg, borderWidth: borders.hair, borderColor: colors.line },
+  option: { flexDirection: 'row', alignItems: 'center', padding: spacing.lg, minHeight: 76, borderRadius: radii.md, backgroundColor: '#2D5646', borderWidth: 0, borderTopWidth: 1.5, borderTopColor: '#4A7A66', borderBottomWidth: 5, borderBottomColor: '#0D241C' },
+  optionDown: { borderBottomWidth: 2, marginTop: 3, marginBottom: -3 },
 });

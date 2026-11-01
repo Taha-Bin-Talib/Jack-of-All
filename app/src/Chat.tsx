@@ -1,6 +1,6 @@
 import React from 'react';
 import { Animated, Easing, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
-import { AppText, Icons, TextField, borders, colors, fontFamily, radii, spacing } from './design';
+import { AppText, Icons, Raised, TONES, TextField, borders, colors, fontFamily, radii, spacing } from './design';
 import { onReact, send, useNet } from './net';
 
 const REACTS = ['😂', '😢', '😉', '😡', '😮', '👏', '🔥', '👍'];
@@ -47,15 +47,17 @@ export default function Chat() {
             </ScrollView>
             <View style={st.form}>
               <TextField value={text} onChangeText={setText} onSubmitEditing={submit} maxLength={120} placeholder="Say something…" style={st.input} returnKeyType="send" accessibilityLabel="Chat message" />
-              <Pressable onPress={submit} disabled={!text.trim()} accessibilityRole="button" accessibilityLabel="Send message" style={({ pressed }) => [st.send, !text.trim() && { opacity: 0.4 }, pressed && { opacity: 0.8 }]}><Text style={st.sendT}>Send</Text></Pressable>
+              <Raised tone={text.trim() ? TONES.gold : TONES.off} height={40} edge={4} disabled={!text.trim()} onPress={submit} accessibilityLabel="Send message" style={{ width: 76 }}><Text style={[st.sendT, !text.trim() && { color: colors.textMuted }]}>Send</Text></Raised>
             </View>
           </View>
         </KeyboardAvoidingView>
       )}
-      <Pressable onPress={() => setOpen(o => !o)} style={({ pressed }) => [st.fab, pressed && { opacity: 0.85 }]} accessibilityRole="button" accessibilityLabel={unread > 0 ? `Chat, ${unread} unread` : open ? 'Close chat' : 'Open chat'} accessibilityState={{ expanded: open }}>
-        {open ? <Icons.Close size={22} color={colors.gold} /> : <Icons.Chat size={22} color={colors.gold} />}
-        {unread > 0 && <View style={st.badge}><Text style={st.badgeT}>{unread}</Text></View>}
-      </Pressable>
+      <View style={st.fab} pointerEvents="box-none">
+        <Raised tone={TONES.green} height={48} edge={4} radius={26} onPress={() => setOpen(o => !o)} accessibilityLabel={unread > 0 ? `Chat, ${unread} unread` : open ? 'Close chat' : 'Open chat'} style={{ width: 52 }}>
+          {open ? <Icons.Close size={22} color={colors.gold} /> : <Icons.Chat size={22} color={colors.gold} />}
+        </Raised>
+        {unread > 0 && <View style={st.badge} pointerEvents="none"><Text style={st.badgeT}>{unread}</Text></View>}
+      </View>
     </>
   );
 }
@@ -74,8 +76,8 @@ function FloatEmoji({ e, name, x }: Omit<Float, 'key'>) {
 }
 
 const st = StyleSheet.create({
-  fab: { position: 'absolute', right: 14, bottom: 18, width: 52, height: 52, borderRadius: 26, borderWidth: borders.hair, borderColor: colors.goldDim, backgroundColor: colors.bgAlt, alignItems: 'center', justifyContent: 'center', elevation: 8, shadowColor: '#000', shadowOpacity: 0.4, shadowRadius: 6, shadowOffset: { width: 0, height: 3 } },
-  badge: { position: 'absolute', top: -4, right: -4, backgroundColor: colors.oxblood, borderRadius: 10, minWidth: 20, height: 20, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, borderWidth: 1.5, borderColor: colors.bg },
+  fab: { position: 'absolute', right: 14, bottom: 14, width: 52, height: 52 },
+  badge: { position: 'absolute', top: -4, right: -4, zIndex: 3, backgroundColor: colors.oxblood, borderRadius: 10, minWidth: 20, height: 20, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, borderWidth: 1.5, borderColor: colors.bg },
   badgeT: { color: colors.text, fontSize: 11, fontFamily: fontFamily.bold },
   avoid: { position: 'absolute', left: 0, right: 0, bottom: 80, alignItems: 'flex-end', paddingRight: 10 },
   panel: { backgroundColor: colors.bgAlt, borderWidth: borders.hair, borderColor: colors.goldDim, borderRadius: radii.lg, maxHeight: 340, elevation: 12, overflow: 'hidden' },
@@ -87,7 +89,7 @@ const st = StyleSheet.create({
   who: { color: colors.gold, fontFamily: fontFamily.bold },
   form: { flexDirection: 'row', gap: spacing.sm, padding: spacing.sm, alignItems: 'center' },
   input: { flex: 1, minWidth: 0, fontSize: 15, minHeight: 44, paddingVertical: 8 },
-  send: { backgroundColor: colors.gold, borderRadius: radii.md, paddingHorizontal: 16, height: 44, justifyContent: 'center' },
+  
   sendT: { color: colors.onGold, fontFamily: fontFamily.bold, fontSize: 15 },
   fname: { color: colors.text, backgroundColor: 'rgba(0,0,0,.6)', borderRadius: 10, paddingHorizontal: 8, fontSize: 12, fontFamily: fontFamily.semibold, overflow: 'hidden' },
 });

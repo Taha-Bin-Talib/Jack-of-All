@@ -130,6 +130,6 @@ const st = StyleSheet.create({
   row: { flexDirection: 'row', gap: spacing.sm },
   revealRow: { flexDirection: 'row', gap: 6, justifyContent: 'center', marginTop: spacing.sm },
   ranks: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 5, marginTop: spacing.sm },
-  chip: { minWidth: 38, height: 34, borderRadius: radii.md, borderWidth: borders.hair, borderColor: colors.lineStrong, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
-  chipOn: { backgroundColor: colors.gold, borderColor: colors.gold },
+  chip: { minWidth: 38, height: 40, borderRadius: radii.md, backgroundColor: '#2D5646', borderTopWidth: 1.5, borderTopColor: '#4A7A66', borderBottomWidth: 4, borderBottomColor: '#0D241C', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
+  chipOn: { backgroundColor: colors.gold, borderTopColor: '#DCC48C', borderBottomColor: '#7C6030', borderBottomWidth: 2, marginTop: 2 },
 });

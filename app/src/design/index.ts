@@ -4,7 +4,7 @@ export * from './typography';
 export { theme } from './theme';
 export { useAppFonts } from './fonts';
 export { AppText } from './components/AppText';
-export { PrimaryButton, SecondaryButton, IconButton } from './components/Buttons';
+export { PrimaryButton, SecondaryButton, IconButton, Raised, TONES } from './components/Buttons';
 export { ScreenContainer, AppHeader, SectionHeading } from './components/Layout';
 export { PlayerAvatar } from './components/PlayerAvatar';
 export { PlayingCard } from './components/PlayingCard';

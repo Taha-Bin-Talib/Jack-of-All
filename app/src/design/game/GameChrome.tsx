@@ -4,7 +4,7 @@ import * as Clipboard from 'expo-clipboard';
 import { borders, colors, radii, sizes, spacing } from '../tokens';
 import { fontFamily } from '../typography';
 import { AppText } from '../components/AppText';
-import { IconButton } from '../components/Buttons';
+import { IconButton, Raised, TONES } from '../components/Buttons';
 import { PlayerAvatar } from '../components/PlayerAvatar';
 import { PlayingCard } from '../components/PlayingCard';
 import { Sliders } from '../components/icons';
@@ -12,13 +12,11 @@ import { useNet } from '../../net';
 
 /* ── GameActionButton: the in-game button. One accent per game state; 44dp+ tall. ── */
 export function GameActionButton({ title, onPress, kind = 'primary', disabled, style, flex }: { title: string; onPress: () => void; kind?: 'primary' | 'danger' | 'quiet'; disabled?: boolean; style?: any; flex?: boolean }) {
-  const bg = kind === 'primary' ? (disabled ? 'rgba(189,152,87,0.16)' : colors.gold) : kind === 'danger' ? colors.oxblood : 'transparent';
-  const fg = kind === 'primary' ? (disabled ? colors.textMuted : colors.onGold) : colors.text;
+  const tone = disabled ? TONES.off : kind === 'primary' ? TONES.gold : kind === 'danger' ? TONES.red : TONES.green;
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={title} accessibilityState={{ disabled: !!disabled }} onPress={disabled ? undefined : onPress}
-      style={({ pressed }) => [st.btn, { backgroundColor: bg, opacity: disabled && kind !== 'primary' ? 0.4 : pressed ? 0.82 : 1 }, disabled && kind === 'primary' && { borderWidth: borders.hair, borderColor: colors.line }, kind === 'quiet' && { borderWidth: borders.hair, borderColor: colors.lineStrong }, flex && { flex: 1, paddingHorizontal: spacing.xs }, style]}>
-      <AppText variant="button" numberOfLines={1} style={{ color: fg }}>{title}</AppText>
-    </Pressable>
+    <Raised tone={tone} height={46} edge={4} onPress={onPress} disabled={disabled} accessibilityLabel={title} style={[flex && { flex: 1 }, style]}>
+      <AppText variant="button" numberOfLines={1} style={{ color: tone.fg }}>{title}</AppText>
+    </Raised>
   );
 }
 

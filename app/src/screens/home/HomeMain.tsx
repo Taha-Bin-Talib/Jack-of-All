@@ -4,7 +4,7 @@ import { AppText, GameRow, Icons, IconButton, PlayerAvatar, PrimaryButton, Scree
 import { fontFamily } from '../../design/typography';
 import { GAME_IDS, GAMES } from '../../games';
 import { PressNote } from './parts';
-import PlaySheet from './PlaySheet';
+import PlayDialog from './PlayDialog';
 import type { Ctx } from './types';
 
 export default function HomeMain({ c }: { c: Ctx }) {
@@ -44,7 +44,7 @@ export default function HomeMain({ c }: { c: Ctx }) {
       <View style={st.bar}>
         <PrimaryButton title="Play" size="lg" onPress={() => setPlay(true)} />
       </View>
-      <PlaySheet c={c} visible={play} onClose={() => setPlay(false)} />
+      <PlayDialog c={c} visible={play} onClose={() => setPlay(false)} />
     </ScreenContainer>
   );
 }

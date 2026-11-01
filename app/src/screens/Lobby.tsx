@@ -1,6 +1,6 @@
 import React from 'react';
 import { Alert, Platform, Pressable, StyleSheet, View } from 'react-native';
-import { AppHeader, AppText, PrimaryButton, ScreenContainer, SecondaryButton, SectionHeading, borders, colors, radii, spacing } from '../design';
+import { AppHeader, AppText, PrimaryButton, ScreenContainer, SecondaryButton, SectionHeading, borders, colors, fontFamilyRef, radii, spacing } from '../design';
 import { leaveRoom, send, useNet } from '../net';
 import { GAMES, GameId } from '../games';
 import { LobbyTable, PlayerRow, RoomCode, isReady } from './lobby/parts';
@@ -84,9 +84,9 @@ export default function Lobby() {
           const on = room.game === g.id;
           return (
             <Pressable key={g.id} disabled={!host || on} accessibilityRole="button" accessibilityState={{ selected: on, disabled: !host }} onPress={() => send({ t: 'setGame', game: g.id })}
-              style={({ pressed }) => [st.chip, on && st.chipOn, !host && !on && { opacity: 0.45 }, pressed && { opacity: 0.8 }]}>
-              <AppText variant="bodySm" tone={on ? 'gold' : 'primary'} style={{ textAlign: 'center' }}>{g.name}</AppText>
-              <AppText variant="caption" tone="muted" style={{ textAlign: 'center' }}>{g.min}–{g.max}</AppText>
+              style={({ pressed }) => [st.chip, on && st.chipOn, !host && !on && { opacity: 0.45 }, pressed && { borderBottomWidth: 2, marginTop: 3 }]}>
+              <AppText variant="bodySm" tone={on ? 'onGold' : 'primary'} style={{ textAlign: 'center', fontFamily: on ? fontFamilyRef.bold : undefined }}>{g.name}</AppText>
+              <AppText variant="caption" tone={on ? 'onGold' : 'muted'} style={{ textAlign: 'center' }}>{g.min}–{g.max}</AppText>
             </Pressable>
           );
         })}
@@ -99,8 +99,8 @@ export default function Lobby() {
               const on = room.settings[sp.key] === o.value;
               return (
                 <Pressable key={o.value} disabled={!host || on} accessibilityRole="button" accessibilityState={{ selected: on, disabled: !host }} onPress={() => send({ t: 'settings', key: sp.key, value: o.value })}
-                  style={({ pressed }) => [st.chip, on && st.chipOn, !host && !on && { opacity: 0.45 }, pressed && { opacity: 0.8 }]}>
-                  <AppText variant="bodySm" tone={on ? 'gold' : 'primary'} style={{ textAlign: 'center' }}>{o.label}</AppText>
+                  style={({ pressed }) => [st.chip, on && st.chipOn, !host && !on && { opacity: 0.45 }, pressed && { borderBottomWidth: 2, marginTop: 3 }]}>
+                  <AppText variant="bodySm" tone={on ? 'onGold' : 'primary'} style={{ textAlign: 'center', fontFamily: on ? fontFamilyRef.bold : undefined }}>{o.label}</AppText>
                 </Pressable>
               );
             })}
@@ -118,6 +118,6 @@ const st = StyleSheet.create({
   hint: { textAlign: 'center', marginTop: spacing.sm },
   err: { marginTop: spacing.md, padding: spacing.md, borderRadius: radii.md, borderWidth: borders.hair, borderColor: colors.oxblood, backgroundColor: 'rgba(118,47,54,0.35)' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  chip: { flexGrow: 1, minWidth: 96, paddingVertical: spacing.md, paddingHorizontal: spacing.md, borderRadius: radii.md, borderWidth: borders.hair, borderColor: colors.line, backgroundColor: colors.bgAlt },
-  chipOn: { borderColor: colors.gold, borderWidth: borders.strong },
+  chip: { flexGrow: 1, minWidth: 96, paddingVertical: spacing.md, paddingHorizontal: spacing.md, borderRadius: radii.md, backgroundColor: '#2D5646', borderTopWidth: 1.5, borderTopColor: '#4A7A66', borderBottomWidth: 5, borderBottomColor: '#0D241C' },
+  chipOn: { backgroundColor: colors.gold, borderTopColor: '#DCC48C', borderBottomColor: '#7C6030', borderBottomWidth: 2, marginTop: 3, marginBottom: 0 },
 });

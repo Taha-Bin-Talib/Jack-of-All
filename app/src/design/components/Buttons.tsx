@@ -1,24 +1,45 @@
 import React from 'react';
 import { ActivityIndicator, Pressable, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
-import { borders, colors, radii, shadows, sizes, spacing } from '../tokens';
+import { colors, radii, shadows, sizes, spacing } from '../tokens';
 import { AppText } from './AppText';
 
 type BtnProps = { title: string; onPress?: () => void; disabled?: boolean; loading?: boolean; size?: 'sm' | 'md' | 'lg'; fullWidth?: boolean; style?: StyleProp<ViewStyle>; accessibilityLabel?: string };
 
+/* ── 3D button: a face that sits on a darker edge and presses down into it ── */
+export type Tone3D = { face: string; edge: string; hi: string; fg: string };
+export const TONES: Record<'gold' | 'green' | 'red' | 'off', Tone3D> = {
+  gold: { face: colors.gold, edge: '#7C6030', hi: '#DCC48C', fg: colors.onGold },
+  green: { face: '#2D5646', edge: '#0D241C', hi: '#4A7A66', fg: colors.text },
+  red: { face: '#8E3A44', edge: '#4B1B22', hi: '#B0606A', fg: colors.text },
+  off: { face: '#2A3C34', edge: '#1B2822', hi: '#2A3C34', fg: colors.textMuted },
+};
+export function Raised({ tone, height, edge = 5, radius = radii.md, onPress, disabled, accessibilityLabel, accessibilityHint, style, children, hitSlop }: {
+  tone: Tone3D; height: number; edge?: number; radius?: number; onPress?: () => void; disabled?: boolean; accessibilityLabel: string; accessibilityHint?: string; style?: StyleProp<ViewStyle>; children: React.ReactNode; hitSlop?: number;
+}) {
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel={accessibilityLabel} accessibilityHint={accessibilityHint} accessibilityState={{ disabled: !!disabled }} hitSlop={hitSlop}
+      onPress={disabled ? undefined : onPress} style={[{ height: height + edge }, style]}>
+      {({ pressed }) => {
+        const down = pressed && !disabled, dy = down ? edge - 1 : 0;
+        return (
+          <>
+            <View pointerEvents="none" style={[st.edge, { top: edge, borderRadius: radius, backgroundColor: tone.edge }, !disabled && shadows.sm]} />
+            <View pointerEvents="none" style={[st.face, { height, borderRadius: radius, backgroundColor: tone.face, borderTopColor: tone.hi, transform: [{ translateY: dy }] }]}>{children}</View>
+          </>
+        );
+      }}
+    </Pressable>
+  );
+}
+
 function Base({ title, onPress, disabled, loading, size = 'md', fullWidth = true, style, accessibilityLabel, kind }: BtnProps & { kind: 'primary' | 'secondary' }) {
   const primary = kind === 'primary', off = disabled || loading;
+  const tone = off && !loading ? TONES.off : primary ? TONES.gold : TONES.green;
   return (
-    <Pressable
-      accessibilityRole="button" accessibilityLabel={accessibilityLabel || title} accessibilityState={{ disabled: !!off }}
-      onPress={off ? undefined : onPress}
-      style={({ pressed }) => [
-        st.base, { height: sizes.button[size] }, fullWidth ? st.full : st.auto,
-        primary ? [st.primary, off ? st.primaryOff : shadows.sm] : st.secondary,
-        pressed && !off && (primary ? st.primaryDown : st.secondaryDown),
-        off && !primary && { opacity: 0.45 }, style,
-      ]}>
-      {loading ? <ActivityIndicator color={primary ? colors.onGold : colors.gold} /> : <AppText variant="button" tone={primary ? (off ? 'muted' : 'onGold') : 'primary'}>{title}</AppText>}
-    </Pressable>
+    <Raised tone={tone} height={sizes.button[size]} edge={size === 'sm' ? 3 : 5} onPress={onPress} disabled={off} accessibilityLabel={accessibilityLabel || title}
+      style={[fullWidth ? st.full : st.auto, style]}>
+      {loading ? <ActivityIndicator color={tone.fg} /> : <AppText variant="button" style={{ color: tone.fg }}>{title}</AppText>}
+    </Raised>
   );
 }
 
@@ -31,20 +52,14 @@ export const SecondaryButton = (p: BtnProps) => <Base {...p} kind="secondary" />
 export function IconButton({ children, onPress, label, size = 'md', filled, style }: { children: React.ReactNode; onPress?: () => void; label: string; size?: 'sm' | 'md' | 'lg'; filled?: boolean; style?: StyleProp<ViewStyle> }) {
   const d = sizes.iconButton[size];
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} hitSlop={spacing.xs}
-      style={({ pressed }) => [st.icon, { width: d, height: d }, filled && { backgroundColor: colors.bgAlt }, pressed && { opacity: 0.65 }, style]}>
+    <Raised tone={TONES.green} height={d - 3} edge={3} onPress={onPress} accessibilityLabel={label} hitSlop={spacing.xs} style={[{ width: d }, style]}>
       <View>{children}</View>
-    </Pressable>
+    </Raised>
   );
 }
 
 const st = StyleSheet.create({
-  base: { borderRadius: radii.md, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xl },
   full: { alignSelf: 'stretch' }, auto: { alignSelf: 'flex-start' },
-  primary: { backgroundColor: colors.gold },
-  primaryOff: { backgroundColor: 'rgba(189,152,87,0.16)', borderWidth: borders.hair, borderColor: colors.line },
-  primaryDown: { backgroundColor: '#A98549' },
-  secondary: { backgroundColor: 'transparent', borderWidth: borders.hair, borderColor: colors.lineStrong },
-  secondaryDown: { backgroundColor: 'rgba(189,152,87,0.12)' },
-  icon: { borderRadius: radii.md, alignItems: 'center', justifyContent: 'center', borderWidth: borders.hair, borderColor: colors.line },
+  edge: { position: 'absolute', left: 0, right: 0, bottom: 0 },
+  face: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xl, borderTopWidth: 1.5 },
 });
