@@ -10,7 +10,7 @@ import { PlayerAvatar } from '../components/PlayerAvatar';
    Geometry is in "units" (the ring is 100 × 76 units) so it scales to any phone; seats are placed around the oval
    with the viewer always at the bottom. Each game picks its own rim (`tone`) but they share one table. */
 const UW = 100, UH = 76;
-const FELT = { x: 43.4, y: 28.6 }, ORBIT = { x: 36, y: 21.5 }, SEAT = { x: 39, y: 30 }, SLOT = { x: 22, y: 12.5 };
+const FELT = { x: 43.4, y: 28.6 }, ORBIT = { x: 36, y: 21.5 }, SEAT = { x: 39, y: 30 }, SLOT = { x: 21, y: 10.2 };
 export type Pt = { x: number; y: number };
 export type Geo = {
   w: number; h: number; u: number; cx: number; cy: number; n: number; my: number; cw: number;

@@ -37,8 +37,11 @@ export function LobbyTable({ players, meId, hostId, seats, suit }: { players: Pl
   const ordered = [...players.slice(meIdx), ...players.slice(0, meIdx)];
   const slots: (Player | null)[] = [...ordered, ...Array(Math.max(0, seats - ordered.length)).fill(null)];
   const rx = W / 2 - 40, ry = H / 2 - 44, cx = W / 2, cy = H / 2;
+  // with three seats or fewer nobody sits at the top, so trim the empty space above the felt
+  const crop = Math.max(seats, players.length) <= 3 ? Math.round(cy - ry * 0.8 - 14) : 0;
   return (
-    <View style={{ width: W, height: H, alignSelf: 'center' }}>
+    <View style={{ width: W, height: H - crop, alignSelf: 'center' }}>
+      <View style={{ position: 'absolute', left: 0, top: -crop, width: W, height: H }}>
       <View style={[st.felt, { left: cx - rx * 0.86, top: cy - ry * 0.8, width: rx * 1.72, height: ry * 1.6, borderRadius: ry * 0.8 }]}>
         <View style={[st.feltIn, { borderRadius: ry * 0.8 - 8 }]}>
           <Suit s={suit} size={26} color={colors.goldDim} />
@@ -58,6 +61,7 @@ export function LobbyTable({ players, meId, hostId, seats, suit }: { players: Pl
           </Appear>
         );
       })}
+      </View>
     </View>
   );
 }

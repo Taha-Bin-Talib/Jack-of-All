@@ -40,19 +40,21 @@ export type ScoreRow = { id: string; name: string; count?: number; out?: boolean
 export function ScoreBoard({ rows, label = 'Cards left' }: { rows: ScoreRow[]; label?: string }) {
   const { height } = useWindowDimensions();
   if (height < 700) return null;                 // short phones: seats already show every count
+  const fit = rows.length <= 4;                  // few players: an even row that always fits, names unshortened
+  const chips = rows.map(r => (
+    <View key={r.id} style={[st.score, fit && { flex: 1, minWidth: 0, justifyContent: 'center' }, r.active && { borderColor: colors.gold }, (r.out || r.away) && { opacity: 0.55 }]}>
+      {!fit && <PlayerAvatar name={r.name} diameter={22} active={r.active} />}
+      <View style={{ flexShrink: 1, alignItems: fit ? 'center' : 'flex-start' }}>
+        <AppText variant="caption" numberOfLines={1} style={{ maxWidth: fit ? undefined : 70, fontFamily: fontFamily.semibold }}>{r.me ? 'You' : r.name}</AppText>
+        <AppText variant="caption" numberOfLines={1} style={{ color: r.out ? colors.table.good : colors.textMuted }}>{r.out ? 'safe' : r.tag ?? (r.count !== undefined ? `${r.count}` : '')}</AppText>
+      </View>
+    </View>
+  ));
   return (
     <View style={{ marginBottom: spacing.xs }} accessibilityLabel={label}>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.lg, gap: spacing.sm }}>
-        {rows.map(r => (
-          <View key={r.id} style={[st.score, r.active && { borderColor: colors.gold }, (r.out || r.away) && { opacity: 0.55 }]}>
-            <PlayerAvatar name={r.name} diameter={22} active={r.active} />
-            <View>
-              <AppText variant="caption" numberOfLines={1} style={{ maxWidth: 70, fontFamily: fontFamily.semibold }}>{r.me ? 'You' : r.name}</AppText>
-              <AppText variant="caption" style={{ color: r.out ? colors.table.good : colors.textMuted }}>{r.out ? 'safe' : r.tag ?? (r.count !== undefined ? `${r.count}` : '')}</AppText>
-            </View>
-          </View>
-        ))}
-      </ScrollView>
+      {fit
+        ? <View style={{ flexDirection: 'row', paddingHorizontal: spacing.lg, gap: spacing.sm }}>{chips}</View>
+        : <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.lg, gap: spacing.sm }}>{chips}</ScrollView>}
     </View>
   );
 }
