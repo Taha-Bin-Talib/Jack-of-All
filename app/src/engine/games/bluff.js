@@ -10,6 +10,7 @@
 const crypto = require('../crypto');
 const { later, setEvent, num } = require('../net');
 const { rank, sortHand, newDeck, rankName, rankWord } = require('../cards');
+const bots = require('../bots');
 
 const cfg = {
   TURN_MS: num(process.env.TURN_MS, 60000),
@@ -50,7 +51,7 @@ function start(room) {
   room.phase = 'playing';
   const copies = decksFor(room);
   room.g = { stage: 'open', turn: null, seq: 0, event: null, pile: [], claim: null, last: null, passes: 0, reveal: null,
-    winnerId: null, loserId: null, outCounter: 0, turnUntil: 0, decks: copies, fx: 0, gone: 0 };
+    winnerId: null, loserId: null, outCounter: 0, turnUntil: 0, decks: copies, fx: 0, gone: 0, known: {} };
   room.players.forEach(p => { p.hand = []; p.out = false; p.place = 0; });
   newDeck(copies).forEach((c, i) => room.players[i % room.players.length].hand.push(c));
   room.players.forEach(p => sortHand(p.hand));
@@ -77,9 +78,11 @@ function giveTurnToResponder(room, from, adder) {
 
 function putCards(room, p, cards, text) {
   const g = room.g;
+  const knew = (g.known[p.id] || []).slice();                // cards everybody saw this player pick up (used by computer seats)
+  g.known[p.id] = knew.filter(c => !cards.includes(c));
   for (const c of cards) p.hand.splice(p.hand.indexOf(c), 1);
   g.pile.push(...cards);
-  g.last = { id: ++g.fx, pid: p.id, cards: cards.slice(), n: cards.length };
+  g.last = { id: ++g.fx, pid: p.id, cards: cards.slice(), n: cards.length, knew };
   g.passes = 0;
   setEvent(room, 'claim', text);
 }
@@ -140,6 +143,7 @@ function call(room, caller) {
     ? `${caller.name} called — ${adder.name} told the truth! ${caller.name} takes ${taken} cards`
     : `${caller.name} called — ${adder.name} was bluffing! ${adder.name} takes ${taken} cards`);
   later(room, cfg.REVEAL_MS, () => {
+    g.known[loser.id] = (g.known[loser.id] || []).concat(L.cards);   // the revealed cards are now public knowledge: the loser holds them
     loser.hand.push(...g.pile); sortHand(loser.hand);
     g.pile = []; g.reveal = null;
     markOut(room, adder);                                  // told the truth with their last cards: safe
@@ -181,11 +185,18 @@ function scheduleTurn(room) {
     if (room.gen !== gen || g.stage !== stage || g.turn !== turn) return;
     if (p.connected && Date.now() < g.turnUntil - 5) return scheduleTurn(room);
     if (stage === 'open') {
-      const { r, cards } = bestRank(p.hand);
-      if (p.connected) setEvent(room, 'info', `${p.name} ran out of time — cards played for them`);
+      if (p.connected) {
+        const { r, cards } = bestRank(p.hand);
+        setEvent(room, 'info', `${p.name} ran out of time — cards played for them`);
+        return open(room, p, r, cards);
+      }
+      const { r, cards } = bots.bluffOpen(p, cfg.MAX_OPEN);
       return open(room, p, r, cards);
     }
-    if (p.connected) setEvent(room, 'info', `${p.name} ran out of time — passed`);
+    if (p.connected) { setEvent(room, 'info', `${p.name} ran out of time — passed`); return pass(room, p); }
+    const mv = bots.bluffRespond(room, p, Math.min(cfg.MAX_ADD, p.hand.length));      // a computer seat thinks: call, add or pass
+    if (mv.do === 'call') return call(room, p);
+    if (mv.do === 'add') return add(room, p, mv.cards);
     pass(room, p);
   });
 }

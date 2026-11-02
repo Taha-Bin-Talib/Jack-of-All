@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert, BackHandler, StatusBar, View, StyleSheet, Text } from 'react-native';
+import { Alert, BackHandler, Image, StatusBar, View, StyleSheet, Text } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useKeepAwake } from 'expo-keep-awake';
 import { colors } from './src/design';
@@ -17,9 +17,10 @@ function Root() {
   const insets = useSafeAreaInsets();
   const fontsReady = useAppFonts();
   const room = net.room;
-  React.useEffect(() => { boot(); }, []);
+  const [held, setHeld] = React.useState(true);                      // the splash stays up for at least one second
+  React.useEffect(() => { boot(); const t = setTimeout(() => setHeld(false), 1000); return () => clearTimeout(t); }, []);
   const confirmLeave = React.useCallback(() => {
-    Alert.alert('Leave room?', net.local ? 'This practice game will end.' : room?.phase === 'playing' ? 'The game goes on without you (a bot plays your cards).' : 'You will leave this room.', [
+    Alert.alert('Leave room?', net.local ? 'This practice game will end.' : room?.phase === 'playing' ? 'The game goes on without you (your cards are played for you).' : 'You will leave this room.', [
       { text: 'Stay', style: 'cancel' }, { text: 'Leave', style: 'destructive', onPress: leaveRoom }]);
   }, [room?.phase, net.local]);
   React.useEffect(() => {
@@ -27,9 +28,16 @@ function Root() {
     return () => h.remove();
   }, [room, confirmLeave]);
 
+  if (held || !net.ready || !fontsReady) {
+    return (
+      <View style={[st.root, { alignItems: 'center', justifyContent: 'center' }]} accessibilityLabel="Jack of All">
+        <StatusBar barStyle="light-content" />
+        <Image source={require('./assets/splash-icon.png')} style={{ width: 240, height: 240 }} resizeMode="contain" />
+      </View>
+    );
+  }
   let body: React.ReactNode;
-  if (!net.ready || !fontsReady) body = null;
-  else if (!room) body = <Home />;
+  if (!room) body = <Home />;
   else if (room.phase === 'lobby') body = <Lobby />;
   else {
     body = (

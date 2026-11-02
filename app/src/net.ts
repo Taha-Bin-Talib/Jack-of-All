@@ -32,6 +32,25 @@ export function warmUp() {
   fetch(url + (url.endsWith('/') ? 'healthz' : '/healthz')).then(() => { clearTimeout(t); stop(); }).catch(() => { clearTimeout(t); stop(); });
 }
 
+/* Is the internet there at all? A request that fails straight away (no network / DNS) means offline; one that just sits
+   there is a sleeping server (still waking up), which is not an error. */
+type Probe = 'ok' | 'down' | 'slow';
+function probe(): Promise<Probe> {
+  return new Promise(res => {
+    const url = snap.server.replace(/^ws/, 'http');
+    if (!/^https?:/.test(url)) return res('ok');
+    const ac = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const t = setTimeout(() => { res('slow'); try { ac && ac.abort(); } catch {} }, 5000);
+    fetch(url + (url.endsWith('/') ? 'healthz' : '/healthz'), { mode: 'no-cors', signal: ac ? ac.signal : undefined } as any)
+      .then(() => { clearTimeout(t); res('ok'); }).catch(() => { clearTimeout(t); res('down'); });
+  });
+}
+const OFFLINE_MSG = 'No internet connection. Check your connection and try again.';
+function goOffline() {
+  pendingFirst.length = 0; wanted = false; clearTimeout(retry);
+  set({ conn: 'offline', waking: false, error: OFFLINE_MSG, errSeq: snap.errSeq + 1 });
+}
+
 export async function boot() {
   try {
     const s = await AsyncStorage.getItem(SKEY); if (s) snap = { ...snap, server: s };
@@ -121,7 +140,7 @@ function fail() {
       return;
     }
     set({ conn: 'connecting', waking: true });
-    retry = setTimeout(connect, 2500);
+    retry = setTimeout(() => { probe().then(r => { if (r === 'down') goOffline(); else connect(); }); }, 2500);
     return;
   }
   set({ conn: 'offline' });
@@ -131,7 +150,7 @@ function fail() {
 export function send(m: any) {
   if (snap.local) return localAct(m);
   if (ws && ws.readyState === 1) ws.send(JSON.stringify(m));
-  else if (m.t === 'create' || m.t === 'join') { pendingFirst.length = 0; pendingFirst.push(m); deadline = Date.now() + 100000; set({ waking: true }); connect(); }
+  else if (m.t === 'create' || m.t === 'join') { pendingFirst.length = 0; pendingFirst.push(m); deadline = Date.now() + 100000; set({ waking: true, error: null }); probe().then(r => { if (r === 'down') goOffline(); else connect(); }); }
 }
 export const act = (a: string, extra: any = {}) => send({ t: 'act', a, ...extra });
 export function leaveRoom() { if (snap.local) return stopLocal(); send({ t: 'leave' }); session = null; persist(); set({ room: null, chat: [] }); }

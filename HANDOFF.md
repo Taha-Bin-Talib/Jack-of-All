@@ -116,3 +116,9 @@ Home screen button "Play now — offline vs 3 bots" starts the selected game wit
 - Play opens `screens/home/PlayDialog.tsx` (a centred modal dialog): Local → pick a game → offline table; Online → Create a room (uses the last game; host switches in the lobby) or Enter room code (opens the Join screen).
 - The old "All games" list route still exists in code but is no longer linked from Home.
 - Buttons are 3D: `Raised` + `TONES` in `design/components/Buttons.tsx` (face on a darker edge, presses down). Used by Primary/Secondary/IconButton/GameActionButton, chat FAB/Send; chips and dialog options use the same raised border look.
+
+## Update: smarter computer seats, offline error, splash
+- `server/src/bots.js` is the brain for computer-controlled seats (offline opponents and players who dropped from an online room): Thulla (duck under the highest, dump high cards when last or void, lead low from long suits), Bluff (calls via a Bayes estimate of whether they could hold the cards, remembers revealed cards in `g.known`/`g.last.knew`, honest adds, occasional bluffs). Jack Thief draws are blind, so it is unchanged. Remember `node app/scripts/sync-engine.js` after editing `server/src` (it now also copies `bots.js`).
+- Bluff bots used to always pass; that was the bug.
+- `net.ts` `probe()`: create/join first checks the network — an immediate network failure shows "No internet connection…"; a slow server is treated as waking up (keeps waiting).
+- `App.tsx` keeps the splash artwork on screen for at least 1 s after JS starts.

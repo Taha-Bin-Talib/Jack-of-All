@@ -11,6 +11,7 @@
 const crypto = require('crypto');
 const { later, setEvent, num } = require('../net');
 const { rank, suit, sortHand, shuffle, newDeck, label, SYM } = require('../cards');
+const bots = require('../bots');
 
 const cfg = {
   SETTLE_MS: num(process.env.SETTLE_MS, 1800),
@@ -319,7 +320,7 @@ function scheduleBot(room) {
       setEvent(room, 'info', `${p.name} ran out of time — highest card played`);
       playCard(room, p, card);
     } else {
-      playCard(room, p, legal[crypto.randomInt(legal.length)]);
+      playCard(room, p, bots.thullaChoose(room, p, legal));
     }
   });
 }

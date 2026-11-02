@@ -2,7 +2,7 @@
 // Run from app/:  node scripts/sync-engine.js      (re-run whenever server/src changes)
 const fs = require('fs'), path = require('path');
 const src = path.join(__dirname, '..', '..', 'server', 'src'), dst = path.join(__dirname, '..', 'src', 'engine');
-const files = ['cards.js', 'net.js', 'rooms.js', 'games/index.js', 'games/thulla.js', 'games/bluff.js', 'games/jackthief.js'];
+const files = ['cards.js', 'net.js', 'rooms.js', 'bots.js', 'games/index.js', 'games/thulla.js', 'games/bluff.js', 'games/jackthief.js'];
 for (const f of files) {
   let s = fs.readFileSync(path.join(src, f), 'utf8');
   const up = f.includes('/') ? '../' : './';
