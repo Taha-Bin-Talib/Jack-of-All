@@ -1,7 +1,7 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Animated, StyleSheet, View } from 'react-native';
 import { act } from '../net';
-import { AppText, CardHand, DealFx, EventToast, GameActionButton, GamePanel, GameTable, Geo, NoticeBar, PileStack, PlayerStatus, PlayingCard, ScoreBoard, TurnIndicator, TurnTimer, VisibilityTag, Fly, colors, spacing, useFlights, useGameNotice } from '../design';
+import { AppText, CardHand, DealFx, EventToast, GameActionButton, GamePanel, GameTable, Geo, NoticeBar, PileStack, PlayerStatus, PlayingCard, ScoreBoard, SlamFly, useShake, TurnIndicator, TurnTimer, VisibilityTag, Fly, colors, spacing, useFlights, useGameNotice } from '../design';
 import { fontFamily } from '../design/typography';
 import { Suit, nameOf } from '../ui';
 import type { RoomState } from '../types';
@@ -27,6 +27,8 @@ export default function Thulla({ room }: { room: RoomState }) {
   const g = room.g, me = room.you.id, P = room.players;
   const myTurn = g.turn === me;
   const { notice, show } = useGameNotice();
+  const shaker = useShake();
+  const thullaCard = g.stage === 'settle' && g.settle && g.settle.kind === 'thulla' && g.plays.length ? g.plays[g.plays.length - 1].card : null;   // the off-suit card that caused it
   const fresh = g.trickNo <= 1 && g.plays.length <= 1 && !g.lastTrick;
   const seat = (id: string) => g.seats.find((x: any) => x.id === id);
   const lead = g.leadSuit && g.stage === 'turn' ? g.leadSuit : null;
@@ -37,7 +39,7 @@ export default function Thulla({ room }: { room: RoomState }) {
   const invalid = () => show(!myTurn ? 'Wait for your turn.' : g.firstTrick ? 'First round: follow ♠, or throw a card below 10.' : g.leadSuit ? `You must follow ${SUIT[g.leadSuit]} — you still hold one.` : 'That card can’t be played right now.');
   const rows = P.map(p => { const sd = seat(p.id); return { id: p.id, name: p.name, count: sd?.count, out: sd?.out, me: p.id === me, away: !p.connected, active: g.turn === p.id || g.pick?.pid === p.id || g.consent?.targetId === p.id }; });
   return (
-    <View style={{ flex: 1 }}>
+    <Animated.View style={[{ flex: 1 }, shaker.style]}>
       <ScoreBoard rows={rows} label="Still in the game" />
       <View style={{ flex: 1, marginBottom: 30 }}>
       <EventToast ev={g.event} />
@@ -59,7 +61,8 @@ export default function Thulla({ room }: { room: RoomState }) {
                   <PlayerStatus geo={geo} i={i} name={p.name} count={sd?.count} me={p.id === me} off={!p.connected} out={sd?.out}
                     active={g.turn === p.id || g.pick?.pid === p.id || g.consent?.targetId === p.id}
                     timerMs={g.timer && g.timer.pid === p.id ? g.timer.ms : null} />
-                  {play && <Fly key={play.card} from={geo.seat(i)} to={geo.slot(i)} w={geo.cw} id={play.card} back={false} duration={360} rot={Math.round(-Math.cos(geo.deg(i) * Math.PI / 180) * 22 + (i % 2 ? 6 : -6))} />}
+                  {play && play.card === thullaCard && <SlamFly key={play.card} from={geo.seat(i)} to={geo.slot(i)} w={geo.cw} id={play.card} onLand={shaker.shake} />}
+                  {play && play.card !== thullaCard && <Fly key={play.card} from={geo.seat(i)} to={geo.slot(i)} w={geo.cw} id={play.card} back={false} duration={360} rot={Math.round(-Math.cos(geo.deg(i) * Math.PI / 180) * 22 + (i % 2 ? 6 : -6))} />}
                 </React.Fragment>
               );
             })}
@@ -99,7 +102,7 @@ export default function Thulla({ room }: { room: RoomState }) {
       <VisibilityTag kind="private" text="Your hand · only you" />
       <CardHand cards={g.you.hand} legal={myTurn ? g.you.legal : undefined} animateIn={fresh} onTap={c => (myTurn ? act('play', { card: c }) : invalid())} onInvalid={invalid} />
       {g.you.hand.length === 0 && <AppText variant="title" tone="gold" style={st.hint}>You are out — safe!</AppText>}
-    </View>
+    </Animated.View>
   );
 }
 

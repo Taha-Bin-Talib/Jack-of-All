@@ -122,3 +122,6 @@ Home screen button "Play now — offline vs 3 bots" starts the selected game wit
 - Bluff bots used to always pass; that was the bug.
 - `net.ts` `probe()`: create/join first checks the network — an immediate network failure shows "No internet connection…"; a slow server is treated as waking up (keeps waiting).
 - `App.tsx` keeps the splash artwork on screen for at least 1 s after JS starts.
+
+## Update: Thulla slam
+- When a Thulla happens, the off-suit card is lifted (≈36px, scale 1.4), accelerates down (`Easing.bezier(.7,0,1,.5)`) and lands tilted at a random spot; on landing it squashes (1.18→0.94→1), a gold ring expands, and the whole Thulla screen shakes (`useShake` in `design/components/Motion.tsx`; `SlamFly` in `design/game/GameTable.tsx`; wired in `screens/Thulla.tsx`). Reduce-motion skips lift, ring, squash and shake.

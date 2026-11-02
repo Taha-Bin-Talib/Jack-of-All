@@ -145,6 +145,61 @@ export function Fly({ from, to, w, id, back = true, delay = 0, duration = 420, f
   );
 }
 
+/* The Thulla slam: the card is lifted high, then accelerates down onto the table.
+   On landing it squashes, a ring spreads out from the spot and the whole screen shakes (`onLand`). */
+export function SlamFly({ from, to, w, id, onLand, court }: { from: Pt; to: Pt; w: number; id?: string; onLand?: () => void; court?: boolean }) {
+  const reduce = useReduceMotion();
+  const spot = React.useRef({ rot: (Math.random() * 56 - 28), dx: (Math.random() - 0.5) * w * 0.5, dy: (Math.random() - 0.5) * w * 0.4 }).current;
+  const end = { x: to.x + spot.dx, y: to.y + spot.dy };
+  const v = React.useRef(new Animated.Value(0)).current;          // 0 → 1 lift, 1 → 2 slam down
+  const sq = React.useRef(new Animated.Value(0)).current;         // squash after landing
+  const ring = React.useRef(new Animated.Value(0)).current;
+  const [landed, setLanded] = React.useState(false);
+  const h = w * 1.4;
+  React.useEffect(() => {
+    if (reduce) {
+      Animated.timing(v, { toValue: 2, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start(() => setLanded(true));
+      return;
+    }
+    Animated.sequence([
+      Animated.timing(v, { toValue: 1, duration: 213, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      Animated.timing(v, { toValue: 2, duration: 347, easing: Easing.bezier(0.7, 0, 1, 0.5), useNativeDriver: true }),
+    ]).start(({ finished }) => {
+      if (!finished) return;
+      setLanded(true);
+      onLand && onLand();
+      Animated.timing(sq, { toValue: 1, duration: 260, easing: Easing.out(Easing.quad), useNativeDriver: true }).start();
+      Animated.timing(ring, { toValue: 1, duration: 480, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+    });
+  }, []);
+  const lift = from.y - h / 2 - 36;
+  const fly = (
+    <Animated.View pointerEvents="none" style={{ position: 'absolute', left: 0, top: 0, zIndex: 40,
+      opacity: v.interpolate({ inputRange: [0, 0.1, 2], outputRange: [0, 1, 1] }),
+      transform: [
+        { translateX: v.interpolate({ inputRange: [0, 1, 2], outputRange: [from.x - w / 2, from.x + (end.x - from.x) * 0.12 - w / 2, end.x - w / 2] }) },
+        { translateY: v.interpolate({ inputRange: [0, 1, 2], outputRange: [from.y - h / 2, lift, end.y - h / 2] }) },
+        { scale: v.interpolate({ inputRange: [0, 1, 2], outputRange: [0.8, 1.4, 0.9] }) },
+        { rotate: v.interpolate({ inputRange: [0, 1, 2], outputRange: ['0deg', `${spot.rot * -0.3}deg`, `${spot.rot}deg`] }) },
+      ] }}>
+      <PlayingCard id={id} faceDown={false} width={w} court={court} />
+    </Animated.View>
+  );
+  if (!landed) return fly;
+  return (
+    <>
+      {!reduce && (
+        <Animated.View pointerEvents="none" style={{ position: 'absolute', left: end.x - w * 0.6, top: end.y - w * 0.6, width: w * 1.2, height: w * 1.2, borderRadius: w * 0.6, borderWidth: 3, borderColor: colors.gold, zIndex: 39,
+          opacity: ring.interpolate({ inputRange: [0, 1], outputRange: [0.9, 0] }), transform: [{ scale: ring.interpolate({ inputRange: [0, 1], outputRange: [0.6, 3] }) }] }} />
+      )}
+      <Animated.View pointerEvents="none" style={{ position: 'absolute', left: end.x - w / 2, top: end.y - h / 2, zIndex: 40,
+        transform: [{ rotate: `${spot.rot}deg` }, { scale: reduce ? 1 : sq.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1.18, 0.94, 1] }) }] }}>
+        <PlayingCard id={id} faceDown={false} width={w} court={court} />
+      </Animated.View>
+    </>
+  );
+}
+
 /* Flights spawned by effects: push() adds, each removes itself when finished */
 export type Flight = { key: string; from: Pt; to: Pt; w: number; id?: string; back?: boolean; delay?: number; duration?: number; fade?: boolean; rot?: number; court?: boolean };
 export function useFlights() {

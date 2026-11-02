@@ -3,12 +3,13 @@ import { AccessibilityInfo, Animated, Easing } from 'react-native';
 import { durations } from '../tokens';
 
 /* true when the phone asks for reduced motion — decorative animation then becomes instant */
+let cachedReduce = false;   // remembered so components that mount later know the setting straight away
 export function useReduceMotion() {
-  const [r, setR] = React.useState(false);
+  const [r, setR] = React.useState(cachedReduce);
   React.useEffect(() => {
     let on = true;
-    AccessibilityInfo.isReduceMotionEnabled?.().then(v => on && setR(!!v)).catch(() => {});
-    const sub = AccessibilityInfo.addEventListener?.('reduceMotionChanged', v => setR(!!v));
+    AccessibilityInfo.isReduceMotionEnabled?.().then(v => { cachedReduce = !!v; if (on) setR(!!v); }).catch(() => {});
+    const sub = AccessibilityInfo.addEventListener?.('reduceMotionChanged', v => { cachedReduce = !!v; setR(!!v); });
     return () => { on = false; sub?.remove?.(); };
   }, []);
   return r;
@@ -27,4 +28,22 @@ export function Appear({ children, dx = 0, dy = 0, delay = 0, duration = duratio
       {children}
     </Animated.View>
   );
+}
+
+/* Screen shake: six decaying jolts over ~380ms. `style` goes on the Animated.View that wraps the screen. */
+export function useShake() {
+  const reduce = useReduceMotion();
+  const v = React.useRef(new Animated.Value(0)).current;
+  const shake = React.useCallback(() => {
+    if (reduce) return;
+    v.setValue(0);
+    Animated.timing(v, { toValue: 6, duration: 380, easing: Easing.out(Easing.quad), useNativeDriver: true }).start();
+  }, [reduce]);
+  const r = [0, 1, 2, 3, 4, 5, 6];
+  const style = { transform: [
+    { translateX: v.interpolate({ inputRange: r, outputRange: [0, 14, -11, 8, -5, 2, 0] }) },
+    { translateY: v.interpolate({ inputRange: r, outputRange: [0, -6, 5, -3, 2, -1, 0] }) },
+    { rotate: v.interpolate({ inputRange: r, outputRange: ['0deg', '0.5deg', '-0.45deg', '0.35deg', '-0.2deg', '0.1deg', '0deg'] }) },
+  ] };
+  return { style, shake };
 }
