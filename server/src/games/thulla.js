@@ -48,6 +48,7 @@ function freshState(room) {
   room.g = {
     stage: 'turn', turn: null, trick: null, trickNo: 0, discarded: 0, loserId: null, seq: 0, event: null,
     outCounter: 0, consent: null, pick: null, settle: null, lastTrick: null, fxSeq: 0, duelSeen: false, turnUntil: 0,
+    seen: [], voids: {},                 // public knowledge for computer seats: every card played, and who has shown a void
   };
   room.players.forEach(p => { p.hand = []; p.out = false; p.place = 0; p.reveal = null; p.requestedThisTurn = false; });
 }
@@ -101,6 +102,8 @@ function playCard(room, p, cardId) {
   const isLead = t.plays.length === 0;
   const off = !isLead && suit(cardId) !== t.leadSuit;
   if (isLead) t.leadSuit = suit(cardId);
+  g.seen.push(cardId);
+  if (off) (g.voids[p.id] = g.voids[p.id] || {})[t.leadSuit] = true;   // they could not follow
   t.plays.push({ pid: p.id, card: cardId });
   g.turn = null;
   if (off && !t.first) return resolveThulla(room, p, cardId);   // the first round can never be a Thulla

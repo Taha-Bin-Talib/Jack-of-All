@@ -149,3 +149,8 @@ Home screen button "Play now — offline vs 3 bots" starts the selected game wit
 - `app/src/sfx.ts`: `playSfx(name)`, `useGameSfx(g, me)` (claims, calls, passes, turn ping, win/lose), `useSfxEnabled` + Settings → "Sound effects" toggle (persisted).
 - Clips are synthesised WAVs in `app/assets/sfx` (tap, deal, play, turn, pass, call, win, lose, slam); hooked into button taps, the deal, Thulla card plays and the slam.
 - Tested on web only (clips fire, no errors); Android bundle exports. Not heard on a device; volume/loudness untested.
+
+## Smarter Thulla computer players
+- Engine now records public info: `g.seen` (cards played) and `g.voids` (who couldn't follow which suit). Used only by `bots.thullaChoose`.
+- Void throws pick the card most dangerous to keep (unbeatable "boss" cards, high cards, short suits, suits others are void in); leads avoid suits where opponents are void; choices have a little randomness so they aren't predictable.
+- Bot-vs-old-bot sim (400 games, 4 players): new bot loses 63 vs 100 expected if equal (3p 74/100, 5p 33/60).

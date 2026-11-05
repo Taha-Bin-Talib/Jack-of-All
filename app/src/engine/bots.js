@@ -16,18 +16,32 @@ const countSuit = (hand, s) => hand.filter(c => suit(c) === s).length;
    So: duck under the current highest when you can, dump your biggest card when you are the last to play (the trick is
    then discarded for free), and when you can't follow, throw your most dangerous high card from your shortest suit. */
 function thullaChoose(room, p, legal) {
-  const t = room.g.trick, hand = p.hand;
+  const g = room.g, t = g.trick, hand = p.hand;
   if (legal.length === 1) return legal[0];
-  if (t.plays.length === 0) return minBy(legal, c => rank(c) - 0.5 * countSuit(hand, suit(c)));      // lead low from a long suit
+  const seen = new Set(g.seen || []), mine = new Set(hand);
+  const live = room.players.filter(q => q !== p && q.hand.length && !q.out);
+  const voidOpps = s => live.filter(q => g.voids && g.voids[q.id] && g.voids[q.id][s]).length;      // opponents who have shown they can't follow s
+  const boss = c => { for (let k = rank(c) + 1; k <= 14; k++) { const id = k + suit(c); if (!seen.has(id) && !mine.has(id)) return false; } return true; };   // nobody can beat it
+  if (t.plays.length === 0) {
+    // lead: the safest card — low, from a long suit, and never a winner in a suit somebody is void in (they'd thulla me)
+    return minBy(legal, c => rank(c) - 0.5 * countSuit(hand, suit(c)) + 4 * voidOpps(suit(c)) + (boss(c) && voidOpps(suit(c)) ? 10 : 0) + rnd() * 0.8);
+  }
   const lead = t.leadSuit, following = legal.filter(c => suit(c) === lead);
-  if (!following.length) return maxBy(legal, c => rank(c) + (4 - countSuit(hand, suit(c))) * 0.6);     // can't follow: shed danger
+  if (!following.length) {
+    // can't follow: this throw is a thulla on whoever holds the top card. Shed what could hurt me later: unbeatable cards
+    // I could never duck with, high cards, cards in short suits (emptying a suit lets me thulla others), suits others are void in
+    return maxBy(legal, c => rank(c) + (4 - countSuit(hand, suit(c))) * 1.2 + (boss(c) ? 3 : 0) + Math.min(3, voidOpps(suit(c)) * 1.5) + rnd() * 0.8);
+  }
   let top = 0;
   for (const pl of t.plays) if (suit(pl.card) === lead) top = Math.max(top, rank(pl.card));
   const lower = following.filter(c => rank(c) < top);
   const last = t.pos >= t.order.length - 1;
   if (last) return maxBy(following, rank);                                  // nobody can thulla after me: dump my highest
   if (lower.length) return maxBy(lower, rank);                              // duck as high as is still safe
-  return minBy(following, rank);                                            // must go over: go over by as little as possible
+  // I must go over. A card nobody can beat is a liability when a later player may be void; otherwise go over as little as possible
+  const risky = voidOpps(lead) > 0;
+  const over = following.filter(c => !(risky && boss(c) && following.length > 1));
+  return minBy(over.length ? over : following, rank);
 }
 
 /* ───────── Bluff ───────── */
