@@ -55,6 +55,11 @@ function bluffRespond(room, p, maxAdd) {
   const adder = room.players.find(q => q.id === L.pid);
   const copies = 4 * g.decks;
   const mine = p.hand.filter(c => rank(c) === claim.rank);
+  if (g.own) {                                                                // everyone passed on my own play: extend it honestly, or let it go
+    if (mine.length && p.hand.length) return { do: 'add', cards: mine.slice(0, maxAdd) };
+    if (p.hand.length > 4 && rnd() < 0.06) return { do: 'add', cards: [pickRandom(p.hand)] };
+    return { do: 'pass' };
+  }
   // the last play can't be honest if there aren't enough copies of the rank left
   const impossible = mine.length + L.n > copies;
   // How likely is it that the last player really held those cards? (Bayes: a 30% habit of lying vs the chance of holding them.)

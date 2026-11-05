@@ -138,3 +138,8 @@ Home screen button "Play now — offline vs 3 bots" starts the selected game wit
 - DM Sans 400/500/700 only (600 dropped; `semibold` now aliases bold). Buttons are bold.
 - Type scale: display 40/43 (-0.8 tracking), h1 30, h2 26 (22 in app bars), body 16/26, small/label/caption 14. No all-caps labels; tagline "Three Games. Endless Fun."
 - Scores and small UI text moved off Playfair (Jack thrown count, rules step numbers, game-card taglines).
+
+## Brighter cards, Redaction 10, Bluff n+1 passes
+- Card tokens brighter (face #FFFEF8, red #D3202E, ink #15181A, back #B8404D / gold line #EBCB82); disabled shade lighter.
+- Card faces use Redaction 10 Bold (OFL, MCKL) bundled as `app/assets/Redaction10-Bold.ttf` (converted from the @fontsource/redaction-10 woff; no new dependency).
+- Bluff: when every other player passes, the last player to add gets another go (`g.own`): they can add 1–2 more (others respond again) or pass (pile thrown away, they open). They cannot call their own play. Computer seats extend honestly if they hold the rank. Engine synced to app; tests added (26 pass).

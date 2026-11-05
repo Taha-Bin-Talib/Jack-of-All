@@ -2,7 +2,9 @@
 // BLUFF — 3–10 players. All cards are dealt; the holder of A♠ opens.
 // A round: the opener puts 1–4 cards face-down and names a rank ("2 Aces"). Then, one player at a time, the next
 // player may CALL BLUFF on the last play, ADD 1 or 2 more face-down cards to the pile (the claim grows, same rank),
-// or PASS. If everybody passes in a row the pile is thrown away and the last player to add opens a new round.
+// or PASS. If everybody else passes, the player who made the last play gets another go (they can't call themselves):
+// they may ADD more, which starts the passing round again, or PASS. Only when they pass too (N-1 passes + their own)
+// is the pile thrown away and they open a new round.
 // A called play is revealed: if it was a lie the player who played it picks up the pile, otherwise the caller does.
 // The one who picks up the pile opens the next round. A player who empties their hand without being caught is SAFE
 // (out of the game); play goes on until only one player still holds cards — that player loses.
@@ -61,7 +63,7 @@ function start(room) {
 
 function setOpen(room, p) {
   const g = room.g;
-  g.stage = 'open'; g.turn = p.id; g.claim = null; g.pile = []; g.passes = 0; g.reveal = null;
+  g.stage = 'open'; g.turn = p.id; g.claim = null; g.pile = []; g.passes = 0; g.own = false; g.reveal = null;
   g.turnUntil = Date.now() + cfg.TURN_MS;
   scheduleTurn(room);
 }
@@ -82,7 +84,7 @@ function putCards(room, p, cards, text) {
   for (const c of cards) p.hand.splice(p.hand.indexOf(c), 1);
   g.pile.push(...cards);
   g.last = { id: ++g.fx, pid: p.id, cards: cards.slice(), n: cards.length, knew };
-  g.passes = 0;
+  g.passes = 0; g.own = false;
   setEvent(room, 'claim', text);
 }
 
@@ -108,11 +110,18 @@ function add(room, p, cards) {
 
 function pass(room, p) {
   const g = room.g;
-  g.passes++;
   setEvent(room, 'info', `${p.name} passes`);
   const adder = byId(room, g.last.pid);
+  if (g.own) return roundEnd(room);                         // the player who made the last play passes on their extra turn: pile goes
+  g.passes++;
   const others = room.players.filter(q => q !== adder && q.hand.length).length;
-  if (g.passes >= others) return roundEnd(room);
+  if (g.passes >= others) {
+    if (!adder.hand.length) return roundEnd(room);          // nothing left to add
+    g.stage = 'respond'; g.turn = adder.id; g.own = true;   // everyone else passed: the adder may add again
+    g.turnUntil = Date.now() + cfg.TURN_MS;
+    setEvent(room, 'info', `Everyone passed — ${adder.name} may add more or pass`);
+    return scheduleTurn(room);
+  }
   giveTurnToResponder(room, p, adder);
 }
 
@@ -194,7 +203,7 @@ function scheduleTurn(room) {
     }
     if (p.connected) { setEvent(room, 'info', `${p.name} ran out of time — passed`); return pass(room, p); }
     const mv = bots.bluffRespond(room, p, Math.min(cfg.MAX_ADD, p.hand.length));      // a computer seat thinks: call, add or pass
-    if (mv.do === 'call') return call(room, p);
+    if (mv.do === 'call' && !g.own) return call(room, p);
     if (mv.do === 'add') return add(room, p, mv.cards);
     pass(room, p);
   });
@@ -229,6 +238,7 @@ function action(room, p, m) {
     case 'call': {
       if (g.stage !== 'respond' || g.turn !== p.id) return 'It is not your turn.';
       if (!g.pile.length) return 'Nothing to call.';
+      if (g.own) return 'You cannot call your own play — add more cards or pass.';
       call(room, p);
       return null;
     }
@@ -255,7 +265,7 @@ function view(room, p) {
     timer: playing && g.turn && (g.stage === 'open' || g.stage === 'respond') ? { pid: g.turn, ms: Math.max(0, g.turnUntil - Date.now()) } : null,
     winnerId: g.winnerId, loserId: g.loserId, event: g.event,
     seats: room.players.map(q => ({ id: q.id, count: q.hand.length, out: !!q.out, place: q.place || 0 })),
-    you: { hand: p.hand, canCall: myTurn && g.stage === 'respond' && g.pile.length > 0, maxAdd: Math.min(cfg.MAX_ADD, p.hand.length), maxOpen: Math.min(cfg.MAX_OPEN, p.hand.length) },
+    you: { hand: p.hand, canCall: myTurn && g.stage === 'respond' && g.pile.length > 0 && !g.own, own: myTurn && !!g.own, maxAdd: Math.min(cfg.MAX_ADD, p.hand.length), maxOpen: Math.min(cfg.MAX_OPEN, p.hand.length) },
   };
 }
 

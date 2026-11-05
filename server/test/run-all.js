@@ -116,7 +116,29 @@ async function rules() {
     assert.strictEqual(bl.action(r, q, { a: 'add', cards: q.hand.slice(0, 2) }), null);
     assert.strictEqual(r.g.claim.count, 3);
     for (let i = 0; i < 2; i++) { const x = r.players.find(y => y.id === r.g.turn); assert.notStrictEqual(x, q); bl.action(r, x, { a: 'pass' }); }
+    // everyone else passed: q (the adder) gets another go — n+1 passes in all — and cannot call their own play
+    assert.strictEqual(r.g.stage, 'respond'); assert.strictEqual(r.g.turn, q.id); assert.ok(r.g.own);
+    assert.strictEqual(bl.view(r, q).you.canCall, false); assert.strictEqual(bl.view(r, q).you.own, true);
+    assert.ok(bl.action(r, q, { a: 'call' }), 'cannot call own play');
+    assert.strictEqual(r.g.gone, 0);
+    bl.action(r, q, { a: 'pass' });                        // q passes too: now the pile goes
     assert.strictEqual(r.g.stage, 'open'); assert.strictEqual(r.g.turn, q.id); assert.strictEqual(r.g.gone, 3);
+    clearTimeout(r.timer);
+  });
+  await t('adder adds again after everyone passed: others respond again; repeats until adder passes', () => {
+    const r = mkRoom('bluff', 3); bl.start(r); clearTimeout(r.timer);
+    const p = r.players.find(x => x.id === r.g.turn);
+    p.hand = ['14H', '14D', '14C', '3S', '4S'];
+    bl.action(r, p, { a: 'open', rank: 14, cards: ['14H'] });
+    for (let round = 0; round < 2; round++) {
+      for (let i = 0; i < 2; i++) { const x = r.players.find(y => y.id === r.g.turn); assert.notStrictEqual(x, p); assert.ok(!r.g.own); bl.action(r, x, { a: 'pass' }); }
+      assert.strictEqual(r.g.turn, p.id); assert.ok(r.g.own);
+      assert.strictEqual(bl.action(r, p, { a: 'add', cards: [round ? '14C' : '14D'] }), null);
+      assert.ok(!r.g.own); assert.notStrictEqual(r.g.turn, p.id); assert.strictEqual(r.g.claim.count, 2 + round);
+    }
+    for (let i = 0; i < 2; i++) { const x = r.players.find(y => y.id === r.g.turn); bl.action(r, x, { a: 'pass' }); }
+    assert.strictEqual(r.g.turn, p.id); bl.action(r, p, { a: 'pass' });
+    assert.strictEqual(r.g.stage, 'open'); assert.strictEqual(r.g.turn, p.id); assert.strictEqual(r.g.gone, 3);
     clearTimeout(r.timer);
   });
   await t('empty hand uncalled = safe; game ends when only one player still has cards', async () => {

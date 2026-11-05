@@ -51,7 +51,7 @@ function PlayingCardImpl({ id, size = 'md', width, faceDown, selected, glow, dis
       );
     }
   }
-  const shade = disabled ? <View pointerEvents="none" style={{ position: 'absolute', left: 0, top: 0, right: 0, bottom: 0, borderRadius: rad, backgroundColor: 'rgba(24,52,42,0.4)' }} /> : null;
+  const shade = disabled ? <View pointerEvents="none" style={{ position: 'absolute', left: 0, top: 0, right: 0, bottom: 0, borderRadius: rad, backgroundColor: 'rgba(24,52,42,0.3)' }} /> : null;
   const badge = selected ? <View pointerEvents="none" style={[st.check, { width: Math.max(14, w * 0.3), height: Math.max(14, w * 0.3), borderRadius: Math.max(7, w * 0.15), top: -w * 0.1, right: -w * 0.1 }]}><Svg width={Math.max(8, w * 0.17)} height={Math.max(8, w * 0.17)} viewBox="0 0 24 24" fill="none" stroke={colors.onGold} strokeWidth={4} strokeLinecap="round" strokeLinejoin="round"><Path d="M5 13l4 4 10-10" /></Svg></View> : null;
   const lift = selected && lifted ? { transform: [{ translateY: -8 }] } : null;
   const inner = <View style={lift}>{face}{shade}{badge}</View>;

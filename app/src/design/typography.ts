@@ -5,7 +5,7 @@ import { TextStyle } from 'react-native';
 export const fontFamily = {
   display: 'PlayfairDisplay_800ExtraBold',    // app name, game titles, hero + section headings
   displaySemi: 'PlayfairDisplay_600SemiBold', // card titles, tagline
-  card: 'PlayfairDisplay_700Bold',            // playing-card faces (J, A, K …)
+  card: 'Redaction10_Bold',                   // playing-card faces (J, A, K …) — Redaction 10, bundled in assets/
   regular: 'DMSans_400Regular',
   medium: 'DMSans_500Medium',
   semibold: 'DMSans_700Bold',                 // DM Sans ships here as 400 / 500 / 700 only

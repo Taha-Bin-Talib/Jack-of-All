@@ -103,10 +103,10 @@ export default function Bluff({ room }: { room: RoomState }) {
                 style={{ marginTop: spacing.sm }} onPress={() => { act('open', { rank: rk, cards: sel }); setSel([]); }} />
             </GamePanel>
           ) : responding ? (
-            <GamePanel title={`${nameOf(P, claim.by)} says: ${claimTxt}`}>
-              <AppText variant="bodySm" tone="muted" style={{ textAlign: 'center', marginBottom: spacing.sm }}>Call their bluff, add 1–2 more cards to the pile, or pass{sel.length ? `  ·  ${sel.length} selected` : ''}</AppText>
+            <GamePanel title={g.you.own ? `Everyone passed — your play stands: ${claimTxt}` : `${nameOf(P, claim.by)} says: ${claimTxt}`}>
+              <AppText variant="bodySm" tone="muted" style={{ textAlign: 'center', marginBottom: spacing.sm }}>{g.you.own ? 'Add 1–2 more cards to the pile, or pass to throw it away' : 'Call their bluff, add 1–2 more cards to the pile, or pass'}{sel.length ? `  ·  ${sel.length} selected` : ''}</AppText>
               <View style={st.row}>
-                <GameActionButton title="Call Bluff" kind="danger" flex disabled={!g.you.canCall} onPress={() => act('call')} />
+                {!g.you.own && <GameActionButton title="Call Bluff" kind="danger" flex disabled={!g.you.canCall} onPress={() => act('call')} />}
                 <GameActionButton title={sel.length ? `Add ${sel.length}` : 'Add 1–2'} flex disabled={!sel.length} onPress={() => { act('add', { cards: sel }); setSel([]); }} />
                 <GameActionButton title="Pass" kind="quiet" flex onPress={() => act('pass')} />
               </View>
