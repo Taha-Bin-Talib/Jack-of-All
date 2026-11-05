@@ -16,8 +16,8 @@ export default function HomeMain({ c }: { c: Ctx }) {
       {/* header */}
       <View style={st.head}>
         <View style={{ flex: 1 }}>
-          <AppText style={st.mark}>JACK OF ALL</AppText>
-          <AppText style={st.tag}>Every hand has a story.</AppText>
+          <AppText style={st.mark}>Jack of All</AppText>
+          <AppText style={st.tag}>Three Games. Endless Fun.</AppText>
         </View>
         <IconButton label="Settings" onPress={() => c.nav.push({ k: 'settings' })}><Icons.Sliders /></IconButton>
         <PressNote label={c.name ? `Profile: ${c.name}` : 'Profile'} onPress={() => c.nav.push({ k: 'profile' })}>
@@ -51,8 +51,8 @@ export default function HomeMain({ c }: { c: Ctx }) {
 
 const st = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingTop: spacing.md, paddingBottom: spacing.md },
-  mark: { fontFamily: fontFamily.display, fontSize: 22, lineHeight: 28, letterSpacing: 3.5, color: colors.text },
-  tag: { fontFamily: fontFamily.displaySemi, fontSize: 13, lineHeight: 18, color: colors.gold, fontStyle: 'italic' },
+  mark: { fontFamily: fontFamily.display, fontSize: 26, lineHeight: 29, letterSpacing: -0.4, color: colors.text },
+  tag: { fontFamily: fontFamily.displaySemi, fontSize: 14, lineHeight: 19, color: colors.gold },
   rule: { height: borders.hair, backgroundColor: colors.line },
   bar: { paddingTop: spacing.md, paddingBottom: spacing.lg },
   under: { flexDirection: 'row', alignItems: 'center', marginTop: spacing.md },

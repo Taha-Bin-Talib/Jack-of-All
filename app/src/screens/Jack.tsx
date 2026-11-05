@@ -68,7 +68,7 @@ export default function Jack({ room }: { room: RoomState }) {
           <>
             <TurnIndicator geo={geo} i={sorting ? -1 : geo.idx(g.turn || '')} />
             <View style={{ position: 'absolute', left: geo.cx - geo.u * 14, width: geo.u * 28, top: geo.cy - geo.u * 5, alignItems: 'center' }} pointerEvents="none">
-              <AppText style={{ fontFamily: fontFamily.display, color: colors.gold, fontSize: Math.max(24, geo.u * 7) }}>{g.thrown.length}</AppText>
+              <AppText style={{ fontFamily: fontFamily.bold, color: colors.gold, fontSize: Math.max(24, geo.u * 7) }}>{g.thrown.length}</AppText>
               <AppText variant="caption" tone="muted" style={{ fontSize: Math.max(10, geo.u * 2.6) }}>cards thrown away</AppText>
             </View>
             {P.map((p, i) => {

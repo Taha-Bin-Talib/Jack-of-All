@@ -39,7 +39,7 @@ function BluffArt({ w, h }: A) {
   const cw = Math.min(w * 0.3, h * 0.52);
   return (
     <View style={[st.box, { width: w, height: h, backgroundColor: FIELD.bluff }]}>
-      <Text allowFontScaling={false} style={{ position: 'absolute', right: w * 0.09, top: h * 0.02, fontFamily: fontFamily.display, fontSize: h * 0.62, lineHeight: h * 0.7, color: colors.gold, opacity: 0.22 }}>?</Text>
+      <Text allowFontScaling={false} style={{ position: 'absolute', right: w * 0.09, top: h * 0.02, fontFamily: fontFamily.card, fontSize: h * 0.62, lineHeight: h * 0.7, color: colors.gold, opacity: 0.22 }}>?</Text>
       <View style={{ position: 'absolute', left: w * 0.16, top: h * 0.2, transform: [{ rotate: '-12deg' }] }}><PlayingCard id="12H" width={cw} /></View>
       <View style={{ position: 'absolute', left: w * 0.34, top: h * 0.16, transform: [{ rotate: '4deg' }] }}><PlayingCard faceDown width={cw} /></View>
       <View style={{ position: 'absolute', left: w * 0.5, top: h * 0.26, transform: [{ rotate: '16deg' }] }}><PlayingCard faceDown width={cw} /></View>

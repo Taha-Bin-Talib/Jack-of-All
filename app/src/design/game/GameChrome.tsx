@@ -25,7 +25,7 @@ export function GameHeader({ title, subtitle, accent = colors.gold, onMenu }: { 
   return (
     <View style={st.head}>
       <View style={{ flex: 1 }}>
-        <AppText variant="h2" numberOfLines={1} style={{ lineHeight: 26 }}>{title}</AppText>
+        <AppText variant="h2" numberOfLines={1} style={{ fontSize: 22, lineHeight: 26 }}>{title}</AppText>
         {subtitle ? <AppText variant="label" numberOfLines={1} style={{ color: accent, marginTop: 1 }}>{subtitle}</AppText> : null}
       </View>
       <IconButton label="Game menu" onPress={onMenu} filled><Sliders /></IconButton>

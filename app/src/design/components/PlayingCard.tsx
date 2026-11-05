@@ -38,7 +38,7 @@ function PlayingCardImpl({ id, size = 'md', width, faceDown, selected, glow, dis
     } else {
       const idx = (
         <View style={{ alignItems: 'center' }}>
-          <Text allowFontScaling={false} numberOfLines={1} style={{ fontFamily: fontFamily.display, color: ink, fontSize: w * 0.3, lineHeight: w * 0.34 }}>{LABEL[rank] || rank}</Text>
+          <Text allowFontScaling={false} numberOfLines={1} style={{ fontFamily: fontFamily.card, color: ink, fontSize: w * 0.3, lineHeight: w * 0.34 }}>{LABEL[rank] || rank}</Text>
           <Suit s={s} size={w * 0.19} color={ink} />
         </View>
       );

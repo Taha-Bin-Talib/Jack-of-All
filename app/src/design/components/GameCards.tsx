@@ -17,7 +17,7 @@ export function GameCard({ game, width, onPress }: { game: GameMeta; width: numb
       <View style={[st.rule, { backgroundColor: game.accent }]} />
       <View style={st.body}>
         <AppText variant="h1" style={{ fontSize: 24, lineHeight: 30 }}>{game.name}</AppText>
-        <AppText variant="body" style={{ fontFamily: fontFamily.displaySemi, color: game.accent, marginTop: spacing.xs }}>{game.tagline}</AppText>
+        <AppText variant="body" style={{ fontFamily: fontFamily.medium, color: game.accent, marginTop: spacing.xs }}>{game.tagline}</AppText>
         <View style={st.row}>
           <AppText variant="label" tone="muted">{game.players}</AppText>
           <AppText variant="label" tone="gold">Open  →</AppText>
@@ -39,7 +39,7 @@ export function GameRow({ game, onPress, height }: { game: GameMeta; onPress: ()
       {box.w > 0 && <GameArt gameId={game.id} width={artW} height={box.h} />}
       <View style={{ flex: 1, justifyContent: 'center', paddingVertical: spacing.md, paddingRight: spacing.md, paddingLeft: narrow ? spacing.md : spacing.lg }}>
         <AppText variant="h2" numberOfLines={1} style={narrow ? { fontSize: 20, lineHeight: 26 } : undefined}>{game.name}</AppText>
-        <AppText variant="bodySm" numberOfLines={1} style={{ fontFamily: fontFamily.displaySemi, color: game.accent, marginTop: 2 }}>{game.tagline}</AppText>
+        <AppText variant="bodySm" numberOfLines={1} style={{ fontFamily: fontFamily.medium, color: game.accent, marginTop: 2 }}>{game.tagline}</AppText>
         {!tight && <AppText variant="bodySm" tone="muted" numberOfLines={lines} style={{ marginTop: spacing.sm }}>{game.blurb}</AppText>}
         <AppText variant="label" tone="gold" style={{ marginTop: spacing.sm }}>{game.players}</AppText>
       </View>

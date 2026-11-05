@@ -29,11 +29,11 @@ export function JackCardFace({ width, suit = 'S' }: { width: number; suit?: stri
         <G rotation={180} origin="50, 70">{fig}</G>
       </Svg>
       <View style={{ position: 'absolute', left: width * 0.05, top: width * 0.03, alignItems: 'center' }}>
-        <Text allowFontScaling={false} style={{ fontFamily: fontFamily.display, color: ink, fontSize: width * 0.15, lineHeight: width * 0.17 }}>J</Text>
+        <Text allowFontScaling={false} style={{ fontFamily: fontFamily.card, color: ink, fontSize: width * 0.15, lineHeight: width * 0.17 }}>J</Text>
         <Suit s={suit} size={width * 0.1} color={ink} />
       </View>
       <View style={{ position: 'absolute', right: width * 0.05, bottom: width * 0.03, alignItems: 'center', transform: [{ rotate: '180deg' }] }}>
-        <Text allowFontScaling={false} style={{ fontFamily: fontFamily.display, color: ink, fontSize: width * 0.15, lineHeight: width * 0.17 }}>J</Text>
+        <Text allowFontScaling={false} style={{ fontFamily: fontFamily.card, color: ink, fontSize: width * 0.15, lineHeight: width * 0.17 }}>J</Text>
         <Suit s={suit} size={width * 0.1} color={ink} />
       </View>
     </View>

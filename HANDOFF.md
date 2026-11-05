@@ -132,3 +132,9 @@ Home screen button "Play now — offline vs 3 bots" starts the selected game wit
 - `CardHand` hand-in now fans from the deck (scale/rotate/overshoot) timed with the deal.
 - Jack Thief deals on first view (`fresh` state, so it still plays when computer players sort instantly).
 - Not tested on a device: haptics (web has no vibration), Android frame rate.
+
+## Two-font system
+- Playfair Display 800 (`fontFamily.display`: app name, game titles, hero/section headings) and 600 (`displaySemi`: card titles, tagline); 700 (`fontFamily.card`) only for card faces / rank chips / room-code letters.
+- DM Sans 400/500/700 only (600 dropped; `semibold` now aliases bold). Buttons are bold.
+- Type scale: display 40/43 (-0.8 tracking), h1 30, h2 26 (22 in app bars), body 16/26, small/label/caption 14. No all-caps labels; tagline "Three Games. Endless Fun."
+- Scores and small UI text moved off Playfair (Jack thrown count, rules step numbers, game-card taglines).

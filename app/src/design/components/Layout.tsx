@@ -28,7 +28,7 @@ export function AppHeader({ title, subtitle, onBack, right }: { title: string; s
     <View style={st.header}>
       {onBack ? <IconButton label="Back" onPress={onBack}><ChevronLeft /></IconButton> : null}
       <View style={{ flex: 1 }}>
-        <AppText variant="h2" numberOfLines={1}>{title}</AppText>
+        <AppText variant="h2" numberOfLines={1} style={{ fontSize: 22, lineHeight: 28 }}>{title}</AppText>
         {subtitle ? <AppText variant="bodySm" tone="muted" numberOfLines={1}>{subtitle}</AppText> : null}
       </View>
       {right}

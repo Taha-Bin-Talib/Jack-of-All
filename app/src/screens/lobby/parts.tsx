@@ -88,7 +88,7 @@ export function PlayerRow({ p, meId, hostId, canKick, onKick }: { p: Player; meI
 const st = StyleSheet.create({
   codeRow: { flexDirection: 'row', justifyContent: 'center', gap: spacing.md, marginTop: spacing.md },
   plate: { width: 66, height: 88, borderRadius: radii.md, backgroundColor: colors.card.face, borderWidth: borders.hair, borderColor: colors.card.edge, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 4 },
-  letter: { fontFamily: fontFamily.display, fontSize: 44, lineHeight: 52, color: colors.card.ink },
+  letter: { fontFamily: fontFamily.card, fontSize: 44, lineHeight: 52, color: colors.card.ink },
   btns: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.md },
   felt: { position: 'absolute', backgroundColor: colors.bgAlt, borderWidth: 3, borderColor: '#3A2E22', padding: 6 },
   feltIn: { flex: 1, borderWidth: borders.hair, borderColor: colors.goldDim, alignItems: 'center', justifyContent: 'center' },

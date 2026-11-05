@@ -65,7 +65,7 @@ export default function Bluff({ room }: { room: RoomState }) {
             <TurnIndicator geo={geo} i={geo.idx(g.turn || '')} />
             {claim && g.pile > 0 && (
               <View style={[st.claim, { left: geo.cx - geo.u * 13, width: geo.u * 26, top: geo.cy + geo.u * 7 }]} pointerEvents="none">
-                <AppText style={{ fontFamily: fontFamily.display, fontSize: Math.max(13, geo.u * 3.6), color: colors.card.ink }} numberOfLines={1}>“{claimTxt}”</AppText>
+                <AppText style={{ fontFamily: fontFamily.card, fontSize: Math.max(13, geo.u * 3.6), color: colors.card.ink }} numberOfLines={1}>“{claimTxt}”</AppText>
               </View>
             )}
             {P.map((p, i) => {
@@ -95,7 +95,7 @@ export default function Bluff({ room }: { room: RoomState }) {
               <View style={st.ranks}>
                 {RANKS.map(r => (
                   <Pressable key={r} hitSlop={5} accessibilityLabel={`Declare ${r}`} accessibilityRole="button" accessibilityState={{ selected: rk === r }} onPress={() => setRk(r)} style={[st.chip, rk === r && st.chipOn]}>
-                    <AppText style={{ fontFamily: fontFamily.display, fontSize: 16, color: rk === r ? colors.onGold : colors.text }}>{rankLabel(r)}</AppText>
+                    <AppText style={{ fontFamily: fontFamily.card, fontSize: 16, color: rk === r ? colors.onGold : colors.text }}>{rankLabel(r)}</AppText>
                   </Pressable>
                 ))}
               </View>

@@ -55,6 +55,6 @@ const st = StyleSheet.create({
   plate: { width: 64, height: 84, borderRadius: radii.md, backgroundColor: colors.surface, borderWidth: borders.hair, borderColor: colors.line, alignItems: 'center', justifyContent: 'center' },
   plateOn: { borderColor: colors.gold, borderWidth: borders.strong },
   plateFull: { backgroundColor: colors.card.face, borderColor: colors.card.edge },
-  letter: { fontFamily: fontFamily.display, fontSize: 40, lineHeight: 48, color: colors.card.ink },
+  letter: { fontFamily: fontFamily.card, fontSize: 40, lineHeight: 48, color: colors.card.ink },
   hidden: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, opacity: 0.01, color: 'transparent', fontSize: 1 },
 });

@@ -18,7 +18,7 @@ export default function GameInfo({ c, id }: { c: Ctx; id: GameId }) {
       </View>
 
       <AppText variant="display" style={{ marginTop: spacing.xl }}>{g.name}</AppText>
-      <AppText variant="h2" style={{ color: g.accent, marginTop: spacing.xs, fontStyle: 'italic' }}>{g.tagline}</AppText>
+      <AppText variant="h2" style={{ color: g.accent, marginTop: spacing.xs }}>{g.tagline}</AppText>
       <AppText variant="label" tone="muted" style={{ marginTop: spacing.md }}>{g.personality.join('  ·  ')}</AppText>
       <AppText variant="body" style={{ marginTop: spacing.lg }}>{g.blurb}</AppText>
 
@@ -53,7 +53,7 @@ const st = StyleSheet.create({
   facts: { flexDirection: 'row', alignItems: 'center', marginTop: spacing.xl, paddingVertical: spacing.lg, borderTopWidth: borders.hair, borderBottomWidth: borders.hair, borderColor: colors.line },
   vr: { width: borders.hair, alignSelf: 'stretch', backgroundColor: colors.line, marginHorizontal: spacing.lg },
   rule: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.md },
-  n: { fontFamily: fontFamily.display, color: colors.gold, fontSize: 18, lineHeight: 22, width: 18 },
+  n: { fontFamily: fontFamily.bold, color: colors.gold, fontSize: 18, lineHeight: 22, width: 18 },
   joinRow: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.md, alignItems: 'center' },
   code: { width: 128, height: sizes.button.md, borderRadius: radii.md, backgroundColor: colors.surface, borderWidth: borders.hair, borderColor: colors.line, color: colors.text, fontFamily: fontFamily.semibold, fontSize: 22, letterSpacing: 6, textAlign: 'center' },
 });
