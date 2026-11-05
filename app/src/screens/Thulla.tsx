@@ -3,6 +3,7 @@ import { Animated, StyleSheet, Vibration, View } from 'react-native';
 import { act } from '../net';
 import { AppText, CardHand, DealFx, EventToast, GameActionButton, GamePanel, GameTable, Geo, NoticeBar, PileStack, PlayerStatus, PlayingCard, ScoreBoard, SlamFly, useShake, TurnIndicator, TurnTimer, VisibilityTag, Fly, colors, spacing, useFlights, useGameNotice } from '../design';
 import { fontFamily } from '../design/typography';
+import { playSfx, useGameSfx } from '../sfx';
 import { Suit, nameOf } from '../ui';
 import type { RoomState } from '../types';
 
@@ -27,8 +28,11 @@ export default function Thulla({ room }: { room: RoomState }) {
   const g = room.g, me = room.you.id, P = room.players;
   const myTurn = g.turn === me;
   const { notice, show } = useGameNotice();
+  useGameSfx(g, me);
   const shaker = useShake();
   const thullaCard = g.stage === 'settle' && g.settle && g.settle.kind === 'thulla' && g.plays.length ? g.plays[g.plays.length - 1].card : null;   // the off-suit card that caused it
+  const nPlays = React.useRef(g.plays.length);
+  React.useEffect(() => { if (g.plays.length > nPlays.current && !thullaCard) playSfx('play'); nPlays.current = g.plays.length; }, [g.plays.length]);
   const fresh = g.trickNo <= 1 && g.plays.length <= 1 && !g.lastTrick;
   const seat = (id: string) => g.seats.find((x: any) => x.id === id);
   const lead = g.leadSuit && g.stage === 'turn' ? g.leadSuit : null;
@@ -61,7 +65,7 @@ export default function Thulla({ room }: { room: RoomState }) {
                   <PlayerStatus geo={geo} i={i} name={p.name} count={sd?.count} me={p.id === me} off={!p.connected} out={sd?.out}
                     active={g.turn === p.id || g.pick?.pid === p.id || g.consent?.targetId === p.id}
                     timerMs={g.timer && g.timer.pid === p.id ? g.timer.ms : null} />
-                  {play && play.card === thullaCard && <SlamFly key={play.card} from={geo.seat(i)} to={geo.slot(i)} w={geo.cw} id={play.card} onLand={() => { shaker.shake(); Vibration.vibrate([0, 70, 45, 35]); }} />}
+                  {play && play.card === thullaCard && <SlamFly key={play.card} from={geo.seat(i)} to={geo.slot(i)} w={geo.cw} id={play.card} onLand={() => { shaker.shake(); playSfx('slam'); Vibration.vibrate([0, 70, 45, 35]); }} />}
                   {play && play.card !== thullaCard && <Fly key={play.card} from={geo.seat(i)} to={geo.slot(i)} w={geo.cw} id={play.card} back={false} duration={360} rot={Math.round(-Math.cos(geo.deg(i) * Math.PI / 180) * 22 + (i % 2 ? 6 : -6))} />}
                 </React.Fragment>
               );

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Animated, Easing, LayoutChangeEvent, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useReduceMotion } from '../components/Motion';
+import { playSfx } from '../../sfx';
 import { colors, borders } from '../tokens';
 import { fontFamily } from '../typography';
 import { PlayingCard } from '../components/PlayingCard';
@@ -236,12 +237,12 @@ export function DealFx({ geo, run }: { geo: Geo; run: boolean }) {
         Animated.timing(deck, { toValue: 2, duration: 260, useNativeDriver: true }),
       ]).start();
     }
-    if (reduce) return;
+    if (reduce) { playSfx('deal'); return; }
     for (let r = 0; r < rounds; r++) for (let i = 0; i < geo.n; i++) {
       const k = r * geo.n + i, delay = DEAL_START + k * DEAL_STEP, a = (geo.deg(i) * Math.PI) / 180;
       items.push({ from: geo.center, to: geo.seat(i), w: geo.u * 5, delay, duration: 360, fade: true, spin: (i % 2 ? 1 : -1) * (160 + r * 25), rot: Math.round(-Math.cos(a) * 14), arc: geo.u * 4 });
       const pv = pulses[i % pulses.length];
-      setTimeout(() => { pv.setValue(0); Animated.timing(pv, { toValue: 1, duration: 280, useNativeDriver: true }).start(); }, delay + 340);
+      setTimeout(() => { playSfx('deal', 0.55); pv.setValue(0); Animated.timing(pv, { toValue: 1, duration: 280, useNativeDriver: true }).start(); }, delay + 340);
     }
     push(items);
   }, [run]);

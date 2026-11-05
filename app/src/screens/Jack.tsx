@@ -3,6 +3,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { act } from '../net';
 import { AppText, CardHand, DealFx, EventToast, FlipCard, GameActionButton, GamePanel, GameTable, Geo, NoticeBar, PlayerStatus, PlayingCard, ScoreBoard, TurnIndicator, TurnTimer, VisibilityTag, colors, radii, spacing, useFlights, useGameNotice } from '../design';
 import { fontFamily } from '../design/typography';
+import { playSfx, useGameSfx } from '../sfx';
 import { nameOf, rankLabel, rankOf, suitOf } from '../ui';
 import type { RoomState } from '../types';
 
@@ -32,6 +33,7 @@ export default function Jack({ room }: { room: RoomState }) {
   const g = room.g, me = room.you.id, P = room.players;
   const sorting = g.stage === 'sort';
   const { notice, show } = useGameNotice();
+  useGameSfx(g, me);
   const [fresh] = React.useState(sorting);          // dealt on first view, even if computer players sort at once
   const [pick, setPick] = React.useState<string | null>(null);
   React.useEffect(() => { setPick(null); }, [g.stage, g.last?.id]);

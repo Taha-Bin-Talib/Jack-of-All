@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { AppHeader, AppText, PrimaryButton, ScreenContainer, TextField, SecondaryButton, borders, colors, fontFamilyRef, radii, sizes, spacing } from '../../design';
 import { GAME_IDS, GAMES } from '../../games';
 import { getSnap, setServer } from '../../net';
+import { setSfxEnabled, useSfxEnabled } from '../../sfx';
 import type { Ctx } from './types';
 
 const Row = ({ title, sub, onPress }: { title: string; sub: string; onPress: () => void }) => (
@@ -13,10 +14,12 @@ const Row = ({ title, sub, onPress }: { title: string; sub: string; onPress: () 
 );
 
 export function Settings({ c }: { c: Ctx }) {
+  const sound = useSfxEnabled();
   return (
     <ScreenContainer scroll safe={false}>
       <AppHeader title="Settings" onBack={c.nav.pop} />
       <View style={{ marginTop: spacing.md }}>
+        <Row title="Sound effects" sub={sound ? 'On — tap to turn off' : 'Off — tap to turn on'} onPress={() => setSfxEnabled(!sound)} />
         <Row title="Profile" sub={c.name ? `Playing as ${c.name}` : 'Choose a display name'} onPress={() => c.nav.push({ k: 'profile' })} />
         <Row title="How to play" sub="Rules for all three games" onPress={() => c.nav.push({ k: 'rules' })} />
         <Row title="Server address" sub="Where online rooms are hosted" onPress={() => c.nav.push({ k: 'server' })} />

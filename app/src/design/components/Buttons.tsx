@@ -1,4 +1,5 @@
 import React from 'react';
+import { playSfx } from '../../sfx';
 import { ActivityIndicator, Pressable, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import { colors, radii, shadows, sizes, spacing } from '../tokens';
 import { AppText } from './AppText';
@@ -18,7 +19,7 @@ export function Raised({ tone, height, edge = 5, radius = radii.md, onPress, dis
 }) {
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={accessibilityLabel} accessibilityHint={accessibilityHint} accessibilityState={{ disabled: !!disabled }} hitSlop={hitSlop}
-      onPress={disabled ? undefined : onPress} style={[{ height: height + edge }, style]}>
+      onPress={disabled ? undefined : () => { playSfx('tap', 0.6); onPress && onPress(); }} style={[{ height: height + edge }, style]}>
       {({ pressed }) => {
         const down = pressed && !disabled, dy = down ? edge - 1 : 0;
         return (

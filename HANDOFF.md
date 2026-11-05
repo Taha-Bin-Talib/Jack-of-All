@@ -143,3 +143,9 @@ Home screen button "Play now — offline vs 3 bots" starts the selected game wit
 - Card tokens brighter (face #FFFEF8, red #D3202E, ink #15181A, back #B8404D / gold line #EBCB82); disabled shade lighter.
 - Card faces use Redaction 10 Bold (OFL, MCKL) bundled as `app/assets/Redaction10-Bold.ttf` (converted from the @fontsource/redaction-10 woff; no new dependency).
 - Bluff: when every other player passes, the last player to add gets another go (`g.own`): they can add 1–2 more (others respond again) or pass (pile thrown away, they open). They cannot call their own play. Computer seats extend honestly if they hold the rank. Engine synced to app; tests added (26 pass).
+
+## Sound effects
+- New dependency: `expo-audio` (~58.0.11) — the only way to play sound in Expo; needs a fresh APK build.
+- `app/src/sfx.ts`: `playSfx(name)`, `useGameSfx(g, me)` (claims, calls, passes, turn ping, win/lose), `useSfxEnabled` + Settings → "Sound effects" toggle (persisted).
+- Clips are synthesised WAVs in `app/assets/sfx` (tap, deal, play, turn, pass, call, win, lose, slam); hooked into button taps, the deal, Thulla card plays and the slam.
+- Tested on web only (clips fire, no errors); Android bundle exports. Not heard on a device; volume/loudness untested.

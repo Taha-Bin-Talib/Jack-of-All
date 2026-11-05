@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { act } from '../net';
 import { AppText, CardHand, DealFx, EventToast, FlipCard, GameActionButton, GamePanel, GameTable, Geo, NoticeBar, PileStack, PlayerStatus, ScoreBoard, TurnIndicator, TurnTimer, VisibilityTag, borders, colors, radii, spacing, useFlights, useGameNotice } from '../design';
 import { fontFamily } from '../design/typography';
+import { playSfx, useGameSfx } from '../sfx';
 import { nameOf, rankLabel, rankOf } from '../ui';
 import type { RoomState } from '../types';
 
@@ -35,6 +36,7 @@ function Fx({ geo, g }: { geo: Geo; g: any }) {
 export default function Bluff({ room }: { room: RoomState }) {
   const g = room.g, me = room.you.id, P = room.players;
   const { notice, show } = useGameNotice();
+  useGameSfx(g, me);
   const [sel, setSel] = React.useState<string[]>([]);
   const [rk, setRk] = React.useState<number | null>(null);
   React.useEffect(() => { setSel([]); setRk(null); }, [g.turn, g.stage]);
