@@ -1,5 +1,5 @@
 import React from 'react';
-import { Animated, StyleSheet, View } from 'react-native';
+import { Animated, StyleSheet, Vibration, View } from 'react-native';
 import { act } from '../net';
 import { AppText, CardHand, DealFx, EventToast, GameActionButton, GamePanel, GameTable, Geo, NoticeBar, PileStack, PlayerStatus, PlayingCard, ScoreBoard, SlamFly, useShake, TurnIndicator, TurnTimer, VisibilityTag, Fly, colors, spacing, useFlights, useGameNotice } from '../design';
 import { fontFamily } from '../design/typography';
@@ -61,7 +61,7 @@ export default function Thulla({ room }: { room: RoomState }) {
                   <PlayerStatus geo={geo} i={i} name={p.name} count={sd?.count} me={p.id === me} off={!p.connected} out={sd?.out}
                     active={g.turn === p.id || g.pick?.pid === p.id || g.consent?.targetId === p.id}
                     timerMs={g.timer && g.timer.pid === p.id ? g.timer.ms : null} />
-                  {play && play.card === thullaCard && <SlamFly key={play.card} from={geo.seat(i)} to={geo.slot(i)} w={geo.cw} id={play.card} onLand={shaker.shake} />}
+                  {play && play.card === thullaCard && <SlamFly key={play.card} from={geo.seat(i)} to={geo.slot(i)} w={geo.cw} id={play.card} onLand={() => { shaker.shake(); Vibration.vibrate([0, 70, 45, 35]); }} />}
                   {play && play.card !== thullaCard && <Fly key={play.card} from={geo.seat(i)} to={geo.slot(i)} w={geo.cw} id={play.card} back={false} duration={360} rot={Math.round(-Math.cos(geo.deg(i) * Math.PI / 180) * 22 + (i % 2 ? 6 : -6))} />}
                 </React.Fragment>
               );

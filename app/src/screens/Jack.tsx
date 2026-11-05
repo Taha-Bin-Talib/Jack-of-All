@@ -32,6 +32,7 @@ export default function Jack({ room }: { room: RoomState }) {
   const g = room.g, me = room.you.id, P = room.players;
   const sorting = g.stage === 'sort';
   const { notice, show } = useGameNotice();
+  const [fresh] = React.useState(sorting);          // dealt on first view, even if computer players sort at once
   const [pick, setPick] = React.useState<string | null>(null);
   React.useEffect(() => { setPick(null); }, [g.stage, g.last?.id]);
   const myTurn = g.you.mustDraw, pk = g.pick, resolving = !!g.you.resolving, drawn: string | null = g.you.drawn || null;
@@ -78,7 +79,7 @@ export default function Jack({ room }: { room: RoomState }) {
                 active={!sorting && g.turn === p.id}
                 timerMs={g.timer && g.timer.pid === p.id ? g.timer.ms : null} />;
             })}
-            <DealFx geo={geo} run={sorting && g.thrown.length === 0} />
+            <DealFx geo={geo} run={fresh} />
             <Fx geo={geo} g={g} />
           </>
         )}
@@ -119,7 +120,7 @@ export default function Jack({ room }: { room: RoomState }) {
         </View>
       )}
       <VisibilityTag kind="private" text="Your hand · only you" />
-      <CardHand cards={hand} selected={pick ? [pick] : []} glow={glow} court animateIn={sorting && g.thrown.length === 0} onTap={onTap} />
+      <CardHand cards={hand} selected={pick ? [pick] : []} glow={glow} court animateIn={fresh} onTap={onTap} />
     </View>
   );
 }

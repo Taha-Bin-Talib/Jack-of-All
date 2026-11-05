@@ -125,3 +125,10 @@ Home screen button "Play now — offline vs 3 bots" starts the selected game wit
 
 ## Update: Thulla slam
 - When a Thulla happens, the off-suit card is lifted (≈36px, scale 1.4), accelerates down (`Easing.bezier(.7,0,1,.5)`) and lands tilted at a random spot; on landing it squashes (1.18→0.94→1), a gold ring expands, and the whole Thulla screen shakes (`useShake` in `design/components/Motion.tsx`; `SlamFly` in `design/game/GameTable.tsx`; wired in `screens/Thulla.tsx`). Reduce-motion skips lift, ring, squash and shake.
+
+## Deal + haptics update
+- Thulla slam now buzzes (RN `Vibration`, pattern 0/70/45/35) when the card lands; SlamFly's reduce-motion path also fires `onLand`.
+- `DealFx` redesigned: deck stack appears at centre, 4 rounds of cards arc out with spin, seats pulse on landing, deck fades away. Reduce-motion shows the deck only.
+- `CardHand` hand-in now fans from the deck (scale/rotate/overshoot) timed with the deal.
+- Jack Thief deals on first view (`fresh` state, so it still plays when computer players sort instantly).
+- Not tested on a device: haptics (web has no vibration), Android frame rate.

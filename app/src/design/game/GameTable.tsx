@@ -125,8 +125,8 @@ export function TurnIndicator({ geo, i }: { geo: Geo; i: number }) {
 }
 
 /* A card that flies from one point to another (and stays there unless `fade`), optionally ending tilted */
-export function Fly({ from, to, w, id, back = true, delay = 0, duration = 420, fade, rot = 0, onEnd, court }: {
-  from: Pt; to: Pt; w: number; id?: string; back?: boolean; delay?: number; duration?: number; fade?: boolean; rot?: number; onEnd?: () => void; court?: boolean;
+export function Fly({ from, to, w, id, back = true, delay = 0, duration = 420, fade, rot = 0, spin = 0, arc = 0, onEnd, court }: {
+  from: Pt; to: Pt; w: number; id?: string; back?: boolean; delay?: number; duration?: number; fade?: boolean; rot?: number; spin?: number; arc?: number; onEnd?: () => void; court?: boolean;
 }) {
   const t = React.useRef(new Animated.Value(0)).current;
   React.useEffect(() => {
@@ -134,9 +134,9 @@ export function Fly({ from, to, w, id, back = true, delay = 0, duration = 420, f
   }, []);
   const h = w * 1.4;
   const tx = t.interpolate({ inputRange: [0, 1], outputRange: [from.x - w / 2, to.x - w / 2] });
-  const ty = t.interpolate({ inputRange: [0, 1], outputRange: [from.y - h / 2, to.y - h / 2] });
+  const ty = arc ? t.interpolate({ inputRange: [0, 0.5, 1], outputRange: [from.y - h / 2, (from.y + to.y) / 2 - h / 2 - arc, to.y - h / 2] }) : t.interpolate({ inputRange: [0, 1], outputRange: [from.y - h / 2, to.y - h / 2] });
   const sc = t.interpolate({ inputRange: [0, 1], outputRange: [0.65, 1] });
-  const rz = t.interpolate({ inputRange: [0, 1], outputRange: ['0deg', `${rot}deg`] });
+  const rz = t.interpolate({ inputRange: [0, 1], outputRange: ['0deg', `${rot + spin}deg`] });
   const op = fade ? t.interpolate({ inputRange: [0, 0.08, 0.8, 1], outputRange: [0, 1, 1, 0] }) : t.interpolate({ inputRange: [0, 0.06, 1], outputRange: [0, 1, 1] });
   return (
     <Animated.View pointerEvents="none" style={{ position: 'absolute', left: 0, top: 0, opacity: op, transform: [{ translateX: tx }, { translateY: ty }, { scale: sc }, { rotate: rz }], zIndex: 30 }}>
@@ -158,7 +158,7 @@ export function SlamFly({ from, to, w, id, onLand, court }: { from: Pt; to: Pt; 
   const h = w * 1.4;
   React.useEffect(() => {
     if (reduce) {
-      Animated.timing(v, { toValue: 2, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start(() => setLanded(true));
+      Animated.timing(v, { toValue: 2, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start(() => { setLanded(true); onLand && onLand(); });
       return;
     }
     Animated.sequence([
@@ -201,7 +201,7 @@ export function SlamFly({ from, to, w, id, onLand, court }: { from: Pt; to: Pt; 
 }
 
 /* Flights spawned by effects: push() adds, each removes itself when finished */
-export type Flight = { key: string; from: Pt; to: Pt; w: number; id?: string; back?: boolean; delay?: number; duration?: number; fade?: boolean; rot?: number; court?: boolean };
+export type Flight = { key: string; from: Pt; to: Pt; w: number; id?: string; back?: boolean; delay?: number; duration?: number; fade?: boolean; rot?: number; spin?: number; arc?: number; court?: boolean };
 export function useFlights() {
   const [list, setList] = React.useState<Flight[]>([]);
   const seq = React.useRef(0);
@@ -215,19 +215,55 @@ export function useFlights() {
 }
 
 /* the deal: cards fly from the middle to every seat, three rounds */
+/* The deal: a small deck appears at the centre, then cards are dealt round the table one by one —
+   each arcs out with a spin, landing at a seat that gives a little pulse. Your own hand fans in after it. */
+export const DEAL_STEP = 55, DEAL_START = 260;
 export function DealFx({ geo, run }: { geo: Geo; run: boolean }) {
   const { push, layer } = useFlights();
+  const reduce = useReduceMotion();
   const done = React.useRef(false);
+  const deck = React.useRef(new Animated.Value(0)).current;
+  const pulses = React.useRef(Array.from({ length: 8 }, () => new Animated.Value(0))).current;
   React.useEffect(() => {
     if (!run || done.current) return;
     done.current = true;
-    const items: Omit<Flight, 'key'>[] = [];
-    for (let r = 0; r < 3; r++) for (let i = 0; i < geo.n; i++) {
-      items.push({ from: geo.center, to: geo.seat(i), w: geo.u * 5, delay: (r * geo.n + i) * 70, duration: 380, fade: true });
+    const rounds = 4, items: Omit<Flight, 'key'>[] = [];
+    if (reduce) { Animated.timing(deck, { toValue: 1, duration: 200, useNativeDriver: true }).start(); }
+    else {
+      Animated.sequence([
+        Animated.timing(deck, { toValue: 1, duration: 220, easing: Easing.out(Easing.back(1.6)), useNativeDriver: true }),
+        Animated.delay(DEAL_START + rounds * geo.n * DEAL_STEP + 250),
+        Animated.timing(deck, { toValue: 2, duration: 260, useNativeDriver: true }),
+      ]).start();
+    }
+    if (reduce) return;
+    for (let r = 0; r < rounds; r++) for (let i = 0; i < geo.n; i++) {
+      const k = r * geo.n + i, delay = DEAL_START + k * DEAL_STEP, a = (geo.deg(i) * Math.PI) / 180;
+      items.push({ from: geo.center, to: geo.seat(i), w: geo.u * 5, delay, duration: 360, fade: true, spin: (i % 2 ? 1 : -1) * (160 + r * 25), rot: Math.round(-Math.cos(a) * 14), arc: geo.u * 4 });
+      const pv = pulses[i % pulses.length];
+      setTimeout(() => { pv.setValue(0); Animated.timing(pv, { toValue: 1, duration: 280, useNativeDriver: true }).start(); }, delay + 340);
     }
     push(items);
   }, [run]);
-  return <>{layer}</>;
+  const cw = geo.u * 5, ch = cw * 1.4;
+  return (
+    <>
+      {run && (
+        <Animated.View pointerEvents="none" style={{ position: 'absolute', left: geo.center.x - cw / 2, top: geo.center.y - ch / 2, zIndex: 28,
+          opacity: deck.interpolate({ inputRange: [0, 0.5, 1, 2], outputRange: [0, 1, 1, 0] }),
+          transform: [{ scale: deck.interpolate({ inputRange: [0, 1, 2], outputRange: [0.4, 1, 0.8] }) }] }}>
+          {[2, 1, 0].map(k => <View key={k} style={{ position: k ? 'absolute' : 'relative', left: k * 1.5, top: -k * 2 }}><PlayingCard faceDown width={cw} /></View>)}
+        </Animated.View>
+      )}
+      {!reduce && run && Array.from({ length: geo.n }).map((_, i) => {
+        const c = geo.seat(i), d = geo.u * 9;
+        return <Animated.View key={i} pointerEvents="none" style={{ position: 'absolute', left: c.x - d / 2, top: c.y - d / 2, width: d, height: d, borderRadius: d / 2, borderWidth: 2, borderColor: colors.gold, zIndex: 27,
+          opacity: pulses[i % pulses.length].interpolate({ inputRange: [0, 0.2, 1], outputRange: [0, 0.8, 0] }),
+          transform: [{ scale: pulses[i % pulses.length].interpolate({ inputRange: [0, 1], outputRange: [0.6, 1.5] }) }] }} />;
+      })}
+      {layer}
+    </>
+  );
 }
 
 /* little stack of face-down cards in the middle with a count */

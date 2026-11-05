@@ -49,8 +49,8 @@ function HandCard({ children, i, lift, animateIn }: { children: React.ReactNode;
   const enter = React.useRef(new Animated.Value(animateIn ? 0 : 1)).current;
   const up = React.useRef(new Animated.Value(lift)).current;
   React.useEffect(() => {
-    if (animateIn) Animated.timing(enter, { toValue: 1, duration: 320, delay: 900 + i * 45, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+    if (animateIn) Animated.timing(enter, { toValue: 1, duration: 420, delay: 450 + i * 70, easing: Easing.out(Easing.back(1.2)), useNativeDriver: true }).start();
   }, []);
   React.useEffect(() => { Animated.spring(up, { toValue: lift, friction: 7, tension: 140, useNativeDriver: true }).start(); }, [lift]);
-  return <Animated.View style={{ opacity: enter, transform: [{ translateY: Animated.add(enter.interpolate({ inputRange: [0, 1], outputRange: [-60, 0] }), up) }] }}>{children}</Animated.View>;
+  return <Animated.View style={{ opacity: enter.interpolate({ inputRange: [0, 0.25, 1], outputRange: [0, 1, 1] }), transform: [{ translateY: Animated.add(enter.interpolate({ inputRange: [0, 1], outputRange: [-130, 0] }), up) }, { scale: enter.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1] }) }, { rotate: enter.interpolate({ inputRange: [0, 1], outputRange: [i % 2 ? '-14deg' : '14deg', '0deg'] }) }] }}>{children}</Animated.View>;
 }
