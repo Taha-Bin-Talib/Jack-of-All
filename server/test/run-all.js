@@ -107,14 +107,15 @@ async function rules() {
     assert.strictEqual(r.g.turn, q.id);
     clearTimeout(r.timer);
   });
-  await t('add 1–2 cards then everyone passes: pile thrown away, last adder opens', () => {
+  await t('add up to 4 cards then everyone passes: pile thrown away, last adder opens', () => {
     const r = mkRoom('bluff', 3); bl.start(r); clearTimeout(r.timer);
     const p = r.players.find(x => x.id === r.g.turn);
     bl.action(r, p, { a: 'open', rank: 14, cards: [p.hand[0]] });
     const q = r.players.find(x => x.id === r.g.turn);
-    assert.ok(bl.action(r, q, { a: 'add', cards: q.hand.slice(0, 3) }), 'adding 3 must be refused');
+    assert.ok(bl.action(r, q, { a: 'add', cards: q.hand.slice(0, 5) }), 'adding 5 must be refused');
     assert.strictEqual(bl.action(r, q, { a: 'add', cards: q.hand.slice(0, 2) }), null);
     assert.strictEqual(r.g.claim.count, 3);
+    // (count is 1 + 2 added)
     for (let i = 0; i < 2; i++) { const x = r.players.find(y => y.id === r.g.turn); assert.notStrictEqual(x, q); bl.action(r, x, { a: 'pass' }); }
     // everyone else passed: q (the adder) gets another go — n+1 passes in all — and cannot call their own play
     assert.strictEqual(r.g.stage, 'respond'); assert.strictEqual(r.g.turn, q.id); assert.ok(r.g.own);

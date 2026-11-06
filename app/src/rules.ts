@@ -11,7 +11,7 @@ export const RULES: Record<string, { title: string; text: string[] }> = {
   bluff: { title: 'Bluff (3–10 players)', text: [
     'All cards are dealt (two decks with 6+ players by default). The holder of the Ace of Spades opens the first round.',
     'The opener puts 1–4 cards face-down and names a rank, e.g. “2 Aces”. They may lie.',
-    'Then, one player at a time, the next player can: CALL BLUFF on the last play, ADD 1 or 2 more face-down cards to the pile (the claim grows, e.g. “3 Aces”), or PASS.',
+    'Then, one player at a time, the next player can: CALL BLUFF on the last play, ADD 1 to 4 more face-down cards to the pile (the claim grows, e.g. “3 Aces”), or PASS.',
     'If you call: the cards just played are shown. Caught lying → the player takes the whole pile. Told the truth → the caller takes the pile. The one who picks up the pile opens the next round.',
     'If everyone passes in a row, the pile is thrown away and the last player to add opens a new round.',
     'If you get rid of all your cards without being caught, you are safe and out of the game. Play goes on until only one player still holds cards — that player loses.',
