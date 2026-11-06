@@ -120,7 +120,7 @@ export default function Bluff({ room }: { room: RoomState }) {
         </>
       )}
       <VisibilityTag kind="private" text="Your hand · only you" />
-      <CardHand cards={g.you.hand} selected={sel} animateIn={fresh} onTap={tapCard} />
+      <CardHand cards={[...g.you.hand].sort((a: string, b: string) => parseInt(a, 10) - parseInt(b, 10))} selected={sel} animateIn={fresh} onTap={tapCard} />
     </View>
   );
 }
