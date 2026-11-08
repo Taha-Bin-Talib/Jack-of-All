@@ -23,7 +23,7 @@ export const colors = {
   // card table
   table: { felt: '#2A6A50', feltDeep: '#225A43', wood: '#3A2E22', woodLine: '#6B5A3F', oxbloodRim: '#5C2229', ivoryRim: '#B9AE92', good: '#8FB58A', bad: '#D9A3A8' },
   // playing cards
-  card: { face: '#FFFEF8', ink: '#15181A', red: '#D3202E', edge: '#E4DAC0', back: '#B8404D', backLine: '#EBCB82' },
+  card: { face: '#FFFFFF', ink: '#101418', red: '#D32F2F', edge: '#E4DAC0', back: '#B8404D', backLine: '#EBCB82' },
 } as const;
 
 /* 4-pt spacing scale */
