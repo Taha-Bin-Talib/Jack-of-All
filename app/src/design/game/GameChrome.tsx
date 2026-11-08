@@ -15,7 +15,7 @@ export function GameActionButton({ title, onPress, kind = 'primary', disabled, s
   const tone = disabled ? TONES.off : kind === 'primary' ? TONES.gold : kind === 'danger' ? TONES.red : TONES.green;
   return (
     <Raised tone={tone} height={46} edge={4} onPress={onPress} disabled={disabled} accessibilityLabel={title} style={[flex && { flex: 1 }, style]}>
-      <AppText variant="button" numberOfLines={1} style={{ color: tone.fg }}>{title}</AppText>
+      <AppText variant="button" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ color: tone.fg }}>{title}</AppText>
     </Raised>
   );
 }

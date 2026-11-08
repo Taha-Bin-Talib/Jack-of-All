@@ -12,11 +12,11 @@ const count = (id: string) => { const g = eng.get(id); return { min: g.min as nu
 const range = (id: string) => { const c = count(id); return `${c.min}–${c.max} players`; };
 
 const COPY: Record<GameId, Pick<GameMeta, 'name' | 'tagline' | 'personality' | 'blurb' | 'accent'>> = {
-  thulla: { name: 'Bhabhi Thulla', tagline: 'Survive the table.', personality: ['Competitive', 'Strategic', 'Traditional'], accent: '#BD9857',
+  thulla: { name: 'Bhabhi Thulla', tagline: 'Survive the table.', personality: ['Competitive', 'Strategic', 'Traditional'], accent: '#F5C542',
     blurb: 'Follow the suit or be thulla’d. Shed every card — the last player still holding cards is the Bhabhi.' },
-  bluff: { name: 'Bluff', tagline: 'Trust nobody.', personality: ['Mischievous', 'Deceptive', 'Unpredictable'], accent: '#D9A3A8',
+  bluff: { name: 'Bluff', tagline: 'Trust nobody.', personality: ['Mischievous', 'Deceptive', 'Unpredictable'], accent: '#FF9A9A',
     blurb: 'Play cards face-down, name a rank, and dare the table to call you out. Lie well — or pick up the pile.' },
-  jackthief: { name: 'Jack Thief', tagline: 'Don’t get caught.', personality: ['Suspenseful', 'Mysterious', 'Playful'], accent: '#F1E8D5',
+  jackthief: { name: 'Jack Thief', tagline: 'Don’t get caught.', personality: ['Suspenseful', 'Mysterious', 'Playful'], accent: '#FFFFFF',
     blurb: 'Throw away your pairs, draw blind from your neighbour, and don’t be left holding the lone Jack.' },
 };
 

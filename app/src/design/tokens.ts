@@ -4,26 +4,26 @@ import { Platform, ViewStyle } from 'react-native';
 
 export const colors = {
   // surfaces — green dominates
-  bg: '#142D26',           // primary background
-  bgAlt: '#203D32',        // secondary background (raised panels, tiles)
-  surface: '#252825',      // dark surface (inputs, sheets, modals)
+  bg: '#0A5237',           // primary background
+  bgAlt: '#06402A',        // secondary background (raised panels, tiles)
+  surface: '#052D1E',      // dark surface (inputs, sheets, modals)
   // text
-  text: '#F1E8D5',         // primary text (parchment)
-  textMuted: '#C9BFA9',    // secondary text
+  text: '#FFFFFF',         // primary text (parchment)
+  textMuted: 'rgba(255,255,255,0.76)',    // secondary text
   // accents — gold is a restrained accent, oxblood is for emphasis / danger
-  gold: '#BD9857',
-  oxblood: '#762F36',
+  gold: '#F5C542',
+  oxblood: '#C94141',
   // derived (do not add new hues; derive from the above)
-  goldDim: 'rgba(189,152,87,0.45)',
-  line: 'rgba(241,232,213,0.14)',        // hairline borders on green
-  lineStrong: 'rgba(189,152,87,0.55)',   // gold hairline
-  scrim: 'rgba(10,20,17,0.72)',
-  onGold: '#142D26',                      // text on gold fills
-  onOxblood: '#F1E8D5',
+  goldDim: 'rgba(245,197,66,0.45)',
+  line: 'rgba(255,255,255,0.16)',        // hairline borders on green
+  lineStrong: 'rgba(245,197,66,0.6)',   // gold hairline
+  scrim: 'rgba(0,0,0,0.65)',
+  onGold: '#222222',                      // text on gold fills
+  onOxblood: '#FFFFFF',
   // card table
-  table: { felt: '#2A6A50', feltDeep: '#225A43', wood: '#3A2E22', woodLine: '#6B5A3F', oxbloodRim: '#5C2229', ivoryRim: '#B9AE92', good: '#8FB58A', bad: '#D9A3A8' },
+  table: { felt: '#14875A', feltDeep: '#0B5A3B', wood: '#5B3A1E', woodLine: '#7A5230', oxbloodRim: '#5B3A1E', ivoryRim: '#5B3A1E', good: '#8FD6A8', bad: '#FF9A9A' },
   // playing cards
-  card: { face: '#FFFEF8', ink: '#15181A', red: '#D3202E', edge: '#E4DAC0', back: '#B8404D', backLine: '#EBCB82' },
+  card: { face: '#FFFFFF', ink: '#101418', red: '#D32F2F', edge: '#E3E3E3', back: '#A8394A', backLine: '#FFFFFF' },
 } as const;
 
 /* 4-pt spacing scale */

@@ -13,7 +13,7 @@ export function PlayerAvatar({ name, size = 'md', active, online, diameter }: { 
   return (
     <View style={{ width: d, height: d }}>
       <View style={[st.disc, { width: d, height: d, borderRadius: d / 2, backgroundColor: FILLS[hash(name) % FILLS.length] }, active ? st.ring : st.edge]}>
-        <AppText variant={size === 'lg' ? 'h2' : size === 'md' ? 'title' : 'bodySm'} style={{ fontFamily: 'PlayfairDisplay_600SemiBold', ...(diameter ? { fontSize: Math.max(10, diameter * 0.4), lineHeight: Math.max(12, diameter * 0.46) } : null) }}>{initials(name)}</AppText>
+        <AppText variant={size === 'lg' ? 'h2' : size === 'md' ? 'title' : 'bodySm'} style={{ fontFamily: 'Roboto_700Bold', ...(diameter ? { fontSize: Math.max(10, diameter * 0.4), lineHeight: Math.max(12, diameter * 0.46) } : null) }}>{initials(name)}</AppText>
       </View>
       {online !== undefined && d >= 28 && <View style={[st.dot, { backgroundColor: online ? '#7FA37A' : colors.textMuted, opacity: online ? 1 : 0.5 }]} />}
     </View>

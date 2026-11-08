@@ -22,8 +22,6 @@ export function Settings({ c }: { c: Ctx }) {
         <Row title="Sound effects" sub={sound ? 'On — tap to turn off' : 'Off — tap to turn on'} onPress={() => setSfxEnabled(!sound)} />
         <Row title="Profile" sub={c.name ? `Playing as ${c.name}` : 'Choose a display name'} onPress={() => c.nav.push({ k: 'profile' })} />
         <Row title="How to play" sub="Rules for all three games" onPress={() => c.nav.push({ k: 'rules' })} />
-        <Row title="Server address" sub="Where online rooms are hosted" onPress={() => c.nav.push({ k: 'server' })} />
-        <Row title="Design system" sub="Colours, type and components" onPress={() => c.nav.push({ k: 'design' })} />
       </View>
     </ScreenContainer>
   );
