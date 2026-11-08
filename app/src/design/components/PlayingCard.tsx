@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { borders, cardSizes, colors, shadows } from '../tokens';
 import { fontFamily } from '../typography';
 import Svg, { Path } from 'react-native-svg';
+import { Suit } from '../../ui';
 import { JackCardFace } from './JackFace';
 
 const LABEL: Record<number, string> = { 11: 'J', 12: 'Q', 13: 'K', 14: 'A' };
@@ -35,16 +36,18 @@ function PlayingCardImpl({ id, size = 'md', width, faceDown, selected, glow, dis
     if (court && rank === 11) {
       face = <View style={[box, st.court, (selected || glow) && st.edge, shadows.sm]}><JackCardFace width={w} suit={s} /></View>;
     } else {
-      const G = { S: '♠', H: '♥', D: '♦', C: '♣' } as Record<string, string>;
       const fs = w * 0.27;
       const idx = (
-        <Text allowFontScaling={false} style={{ fontFamily: fontFamily.card, color: ink, fontSize: fs, lineHeight: fs * 1.05, textAlign: 'center' }}>{`${LABEL[rank] || rank}\n${G[s]}`}</Text>
+        <View style={{ alignItems: 'center' }}>
+          <Text allowFontScaling={false} numberOfLines={1} style={{ fontFamily: fontFamily.card, color: ink, fontSize: fs, lineHeight: fs * 1.05 }}>{LABEL[rank] || rank}</Text>
+          <Suit s={s} size={w * 0.2} color={ink} />
+        </View>
       );
       face = (
         <View style={[box, st.face, (selected || glow) && st.edge]}>
           <View style={{ position: 'absolute', left: w * 0.1, top: w * 0.07 }}>{idx}</View>
           <View style={{ position: 'absolute', right: w * 0.1, bottom: w * 0.07, transform: [{ rotate: '180deg' }] }}>{idx}</View>
-          <Text allowFontScaling={false} style={{ fontFamily: fontFamily.card, color: ink, fontSize: w * 0.567, lineHeight: w * 0.7 }}>{G[s]}</Text>
+          <Suit s={s} size={w * 0.46} color={ink} />
         </View>
       );
     }
