@@ -40,7 +40,7 @@ export default function Jack({ room }: { room: RoomState }) {
   const myTurn = g.you.mustDraw, pk = g.pick, resolving = !!g.you.resolving, drawn: string | null = g.you.drawn || null;
   const throwing = (sorting && !g.you.done) || resolving;
   // while sorting (or checking a drawn card) the hand is shown by rank so pairs are easy to see
-  const hand: string[] = sorting || resolving ? [...g.you.hand].sort((a, b) => rankOf(a) - rankOf(b)) : g.you.hand;
+  const hand: string[] = [...g.you.hand].sort((a, b) => rankOf(a) - rankOf(b));
   const counts: Record<number, number> = {};
   for (const c of hand) counts[rankOf(c)] = (counts[rankOf(c)] || 0) + 1;
   const glow = sorting || resolving ? hand.filter(c => counts[rankOf(c)] > 1) : [];
