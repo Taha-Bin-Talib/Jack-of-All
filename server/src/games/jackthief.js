@@ -217,7 +217,7 @@ function onPresence(room, p) {
 function reset(room) { clearTimeout(room.timer); room.timer = null; room.gen++; room.g = null; room.players.forEach(p => { p.hand = []; }); }
 
 module.exports = {
-  id: 'jackthief', name: 'Jack Thief', min: 2, max: 10,
+  id: 'jackthief', name: 'Jack Thief', min: 2, max: 8,
   defaults: () => ({ direction: 'cw' }),
   settings: [{ key: 'direction', label: 'Draw direction', options: [
     { value: 'cw', label: 'Clockwise' }, { value: 'ccw', label: 'Anti-clockwise' } ] }],

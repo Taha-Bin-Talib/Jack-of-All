@@ -121,8 +121,12 @@ export default function Jack({ room }: { room: RoomState }) {
           </ScrollView>
         </View>
       )}
-      <VisibilityTag kind="private" text="Your hand · only you" />
-      <CardHand cards={hand} selected={pick ? [pick] : []} glow={glow} court animateIn={fresh} onTap={onTap} />
+      {room.you.spectator ? <VisibilityTag kind="public" text="You’re spectating — no cards are shown" /> : (
+        <>
+        <VisibilityTag kind="private" text="Your hand · only you" />
+        <CardHand cards={hand} selected={pick ? [pick] : []} glow={glow} court animateIn={fresh} onTap={onTap} />
+        </>
+      )}
     </View>
   );
 }

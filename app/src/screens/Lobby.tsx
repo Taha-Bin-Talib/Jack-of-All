@@ -17,9 +17,10 @@ export default function Lobby() {
   React.useEffect(() => { if (!ev) return; setToast(ev); const t = setTimeout(() => setToast(null), 3600); return () => clearTimeout(t); }, [ev?.seq]);
   if (!room) return null;
 
-  const me = room.you.id, host = room.hostId === me, meP = players.find(p => p.id === me);
+  const spec = !!room.you.spectator, watchers = room.spectators || [];
+  const me = room.you.id, host = room.hostId === me && !spec, meP = players.find(p => p.id === me);
   const info = catalog.find(g => g.id === room.game), meta = GAMES[room.game as GameId];
-  const n = players.length, min = info?.min ?? 2, max = info?.max ?? 10;
+  const n = players.length, min = info?.min ?? 2, max = Math.min(8, info?.max ?? 8);
   const away = players.filter(p => !p.connected), readyN = players.filter(p => p.connected && isReady(p, room.hostId)).length;
   const allReady = n >= min && away.length === 0 && readyN === n;
   const canStart = !!info && n >= min && n <= max && away.length === 0 && conn === 'online';
@@ -31,7 +32,8 @@ export default function Lobby() {
 
   /* one honest status line for every state the table can be in */
   let status: { text: string; tone: 'gold' | 'muted' | 'warn' };
-  if (conn !== 'online') status = { text: 'Connection lost — trying to reconnect…', tone: 'warn' };
+  if (spec) status = room.you.join === 'now' ? { text: 'You’re spectating — a seat is free, you can take it.', tone: 'gold' } : { text: `You’re spectating — the table is full (${n}/${max}).`, tone: 'muted' };
+  else if (conn !== 'online') status = { text: 'Connection lost — trying to reconnect…', tone: 'warn' };
   else if (starting) status = { text: 'Game starting…', tone: 'gold' };
   else if (n < min) status = { text: `Waiting for players — need ${min - n} more`, tone: 'muted' };
   else if (away.length) status = { text: `Waiting for ${away.map(p => p.name).join(', ')} to reconnect`, tone: 'warn' };
@@ -55,7 +57,12 @@ export default function Lobby() {
 
       {/* actions */}
       <View style={{ marginTop: spacing.lg }}>
-        {host ? (
+        {spec ? (
+          <>
+            <PrimaryButton title={room.you.join === 'now' ? 'Take a seat' : `Table full (${n}/${max})`} size="lg" disabled={room.you.join !== 'now'} onPress={() => send({ t: 'joinTable' })} />
+            <AppText variant="caption" tone="muted" style={st.hint}>You can see the table but never anyone’s cards.</AppText>
+          </>
+        ) : host ? (
           <>
             <PrimaryButton title={starting ? 'Starting…' : allReady || n < min ? 'Start game' : 'Start anyway'} size="lg" loading={starting} disabled={!canStart}
               onPress={() => { setStarting(true); send({ t: 'start' }); }} />
@@ -74,6 +81,8 @@ export default function Lobby() {
         {error ? <View style={st.err}><AppText variant="bodySm">{error}</AppText></View> : null}
       </View>
 
+      {watchers.length > 0 && <AppText variant="bodySm" tone="muted" style={{ textAlign: 'center', marginTop: spacing.md }}>👁 Spectating ({watchers.length}/2): {watchers.map(w => w.name + (w.id === me ? ' (you)' : '')).join(', ')}</AppText>}
+
       <SectionHeading title={`Players · ${n}`} />
       {players.map(p => <PlayerRow key={p.id} p={p} meId={me} hostId={room.hostId} canKick={host} onKick={() => send({ t: 'kick', id: p.id })} />)}
 
@@ -86,7 +95,7 @@ export default function Lobby() {
             <Pressable key={g.id} disabled={!host || on} accessibilityRole="button" accessibilityState={{ selected: on, disabled: !host }} onPress={() => send({ t: 'setGame', game: g.id })}
               style={({ pressed }) => [st.chip, on && st.chipOn, !host && !on && { opacity: 0.45 }, pressed && { borderBottomWidth: 2, marginTop: 3 }]}>
               <AppText variant="bodySm" tone={on ? 'onGold' : 'primary'} style={{ textAlign: 'center', fontFamily: on ? fontFamilyRef.bold : undefined }}>{g.name}</AppText>
-              <AppText variant="caption" tone={on ? 'onGold' : 'muted'} style={{ textAlign: 'center' }}>{g.min}–{g.max}</AppText>
+              <AppText variant="caption" tone={on ? 'onGold' : 'muted'} style={{ textAlign: 'center' }}>{g.min}–{Math.min(8, g.max)}</AppText>
             </Pressable>
           );
         })}
