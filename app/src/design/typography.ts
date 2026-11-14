@@ -1,15 +1,15 @@
-/* Typography: matches the website — the system sans (Roboto on Android) for everything, the same sans on card faces.
+/* Typography: Gelasio (the Georgia-compatible serif) for all interface text.
    Custom fonts come in one family name per weight, so never combine them with `fontWeight`. */
 import { TextStyle } from 'react-native';
 
 export const fontFamily = {
-  display: 'Roboto_700Bold',      // app name, game titles, hero + section headings
-  displaySemi: 'Roboto_500Medium',
-  card: 'Roboto_700Bold',        // playing-card faces — same bold system sans as the website's Thulla cards
-  regular: 'Roboto_400Regular',
-  medium: 'Roboto_500Medium',
-  semibold: 'Roboto_700Bold',
-  bold: 'Roboto_700Bold',
+  display: 'Gelasio_700Bold',                // app name, game titles, hero + section headings
+  displaySemi: 'Gelasio_600SemiBold',         // card titles, tagline
+  card: 'Roboto_700Bold',                     // playing-card faces — bold sans, same as the website's Thulla cards
+  regular: 'Gelasio_400Regular',
+  medium: 'Gelasio_500Medium',
+  semibold: 'Gelasio_700Bold',
+  bold: 'Gelasio_700Bold',
 } as const;
 
 export const fontSizes = { xs: 13, sm: 14, md: 16, lg: 18, xl: 22, xxl: 30, display: 40 } as const;

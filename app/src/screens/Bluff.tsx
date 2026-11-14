@@ -119,8 +119,12 @@ export default function Bluff({ room }: { room: RoomState }) {
           {g.timer && g.timer.pid === me && <View style={{ paddingHorizontal: spacing.lg, marginBottom: 2 }}><TurnTimer ms={g.timer.ms} /></View>}
         </>
       )}
-      <VisibilityTag kind="private" text="Your hand · only you" />
-      <CardHand cards={[...g.you.hand].sort((a: string, b: string) => parseInt(a, 10) - parseInt(b, 10))} selected={sel} animateIn={fresh} onTap={tapCard} />
+      {room.you.spectator ? <VisibilityTag kind="public" text="You’re spectating — no cards are shown" /> : (
+        <>
+        <VisibilityTag kind="private" text="Your hand · only you" />
+        <CardHand cards={[...g.you.hand].sort((a: string, b: string) => parseInt(a, 10) - parseInt(b, 10))} selected={sel} animateIn={fresh} onTap={tapCard} />
+        </>
+      )}
     </View>
   );
 }

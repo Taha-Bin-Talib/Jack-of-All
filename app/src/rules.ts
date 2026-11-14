@@ -8,7 +8,7 @@ export const RULES: Record<string, { title: string; text: string[] }> = {
     'You are safe when your hand is empty after a round. The last player holding cards is the Bhabhi.',
     'Final duel: when two players remain, a last card that loses makes you safe. A last card that wins means you blindly pick one of your opponent’s cards and play it. Repeat until someone is left.',
     'You have 1 minute per move, or your highest legal card is played for you.' ] },
-  bluff: { title: 'Bluff (3–10 players)', text: [
+  bluff: { title: 'Bluff (3–8 players)', text: [
     'All cards are dealt (two decks with 6+ players by default). The holder of the Ace of Spades opens the first round.',
     'The opener puts 1–4 cards face-down and names a rank, e.g. “2 Aces”. They may lie.',
     'Then, one player at a time, the next player can: CALL BLUFF on the last play, ADD 1 to 4 more face-down cards to the pile (the claim grows, e.g. “3 Aces”), or PASS.',
@@ -16,7 +16,7 @@ export const RULES: Record<string, { title: string; text: string[] }> = {
     'If everyone passes in a row, the pile is thrown away and the last player to add opens a new round.',
     'If you get rid of all your cards without being caught, you are safe and out of the game. Play goes on until only one player still holds cards — that player loses.',
     'You have 1 minute per turn; if you run out of time you pass (or, when opening, honest cards are played).' ] },
-  jackthief: { title: 'Jack Thief (2–10 players)', text: [
+  jackthief: { title: 'Jack Thief (2–8 players)', text: [
     'One random Jack is removed and ALL the other cards are dealt out.',
     'First, everyone throws away their own pairs of the same rank: tap two cards of the same rank and they go to the thrown-away pile, where everyone can see them. Tap Done when you have no pairs left.',
     'Then take turns drawing one face-down card from the next player. You are shown which card you picked and it joins your hand. If it matches a card you hold, tap the two cards to throw the pair away yourself, then tap Done.',

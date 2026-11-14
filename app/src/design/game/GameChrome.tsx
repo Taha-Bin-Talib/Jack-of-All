@@ -7,7 +7,7 @@ import { AppText } from '../components/AppText';
 import { IconButton, Raised, TONES } from '../components/Buttons';
 import { PlayerAvatar } from '../components/PlayerAvatar';
 import { PlayingCard } from '../components/PlayingCard';
-import { Sliders } from '../components/icons';
+import { Eye, Sliders } from '../components/icons';
 import { useNet } from '../../net';
 
 /* ── GameActionButton: the in-game button. One accent per game state; 44dp+ tall. ── */
@@ -21,13 +21,19 @@ export function GameActionButton({ title, onPress, kind = 'primary', disabled, s
 }
 
 /* ── GameHeader: game title + a live sub-line; the menu button opens GameSettingsMenu ── */
-export function GameHeader({ title, subtitle, accent = colors.gold, onMenu }: { title: string; subtitle?: string; accent?: string; onMenu: () => void }) {
+export function GameHeader({ title, subtitle, accent = colors.gold, onMenu, watchers = 0, onEye }: { title: string; subtitle?: string; accent?: string; onMenu: () => void; watchers?: number; onEye?: () => void }) {
   return (
     <View style={st.head}>
       <View style={{ flex: 1 }}>
         <AppText variant="h2" numberOfLines={1} style={{ fontSize: 22, lineHeight: 26 }}>{title}</AppText>
         {subtitle ? <AppText variant="label" numberOfLines={1} style={{ color: accent, marginTop: 1 }}>{subtitle}</AppText> : null}
       </View>
+      {watchers > 0 && onEye ? (
+        <View style={{ marginRight: spacing.sm }}>
+          <IconButton label={`${watchers} spectating`} onPress={onEye} filled><Eye color={colors.gold} /></IconButton>
+          <View style={st.eyeN} pointerEvents="none"><AppText variant="caption" style={{ color: colors.onGold, fontSize: 11, lineHeight: 14 }}>{watchers}</AppText></View>
+        </View>
+      ) : null}
       <IconButton label="Game menu" onPress={onMenu} filled><Sliders /></IconButton>
     </View>
   );
@@ -186,6 +192,7 @@ export function GameSettingsMenu({ visible, onClose, gameName, rules, code, loca
 }
 
 const st = StyleSheet.create({
+  eyeN: { position: 'absolute', top: -5, right: -5, minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 4, backgroundColor: colors.gold, alignItems: 'center', justifyContent: 'center' },
   btn: { minHeight: 44, borderRadius: radii.md, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
   head: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, minHeight: sizes.header - 4 },
   score: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: 5, paddingHorizontal: spacing.sm, borderRadius: radii.md, borderWidth: borders.hair, borderColor: colors.line, backgroundColor: 'rgba(14,30,25,.5)' },

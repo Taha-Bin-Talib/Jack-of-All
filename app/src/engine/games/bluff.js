@@ -274,7 +274,7 @@ function onPresence(room) { if (room.phase === 'playing') scheduleTurn(room); }
 function reset(room) { clearTimeout(room.timer); room.timer = null; room.gen++; room.g = null; room.players.forEach(p => { p.hand = []; }); }
 
 module.exports = {
-  id: 'bluff', name: 'Bluff', min: 3, max: 10,
+  id: 'bluff', name: 'Bluff', min: 3, max: 8,
   defaults: () => ({ decks: 'auto' }),
   settings: [{ key: 'decks', label: 'Decks', options: [
     { value: 'auto', label: 'Auto' }, { value: '1', label: '1 deck' }, { value: '2', label: '2 decks' } ] }],

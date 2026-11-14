@@ -68,8 +68,8 @@ export default function DesignPreview({ onBack }: { onBack: () => void }) {
       <SectionHeading title="Games" />
       <View style={{ gap: spacing.md }}>
         <GameTile gameId="thulla" title="Bhabhi Thulla" meta="3–8 players" description="Shed every card. The last one holding cards is the Bhabhi." selected={game === 'thulla'} onPress={() => setGame('thulla')} />
-        <GameTile gameId="bluff" title="Bluff" meta="3–10 players" description="Play cards face down, name a rank, and dare the table to call you." selected={game === 'bluff'} onPress={() => setGame('bluff')} />
-        <GameTile gameId="jackthief" title="Jack Thief" meta="2–10 players" description="Pair off your cards and don't get stuck with the lone Jack." selected={game === 'jackthief'} onPress={() => setGame('jackthief')} />
+        <GameTile gameId="bluff" title="Bluff" meta="3–8 players" description="Play cards face down, name a rank, and dare the table to call you." selected={game === 'bluff'} onPress={() => setGame('bluff')} />
+        <GameTile gameId="jackthief" title="Jack Thief" meta="2–8 players" description="Pair off your cards and don't get stuck with the lone Jack." selected={game === 'jackthief'} onPress={() => setGame('jackthief')} />
       </View>
 
       <SectionHeading title="Spacing · radii · shadow" />
