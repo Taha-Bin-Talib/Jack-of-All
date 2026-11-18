@@ -74,6 +74,28 @@ async function rules() {
     clearTimeout(r.timer);
   });
 
+  const duel = (hands, noForfeit) => {
+    const r = mkRoom('thulla', 3); th.start(r); clearTimeout(r.timer); r.gen++;
+    r.noForfeit = noForfeit;
+    r.players[2].hand = []; r.players[2].out = true; r.players[2].place = 1;
+    r.players[0].hand = hands[0]; r.players[1].hand = hands[1];
+    r.g.discarded = 52 - 2 - hands[0].length - hands[1].length;
+    return r;
+  };
+  await t('final duel: a player who can be forced to lose throws in their cards and is the Bhabhi', async () => {
+    const r = duel([['7S', '12H', '7H'], ['3D', '9C', '13D']]);
+    th._t.newTrick(r, r.players[0], false);
+    th._t.finishTrick(r, r.players[0]);
+    assert.strictEqual(r.g.stage, 'settle'); assert.strictEqual(r.g.settle.kind, 'forfeit');
+    const v = th.view(r, r.players[1]); assert.strictEqual(v.forfeit.pid, 'p0'); assert.strictEqual(v.forfeit.cards.length, 3);
+    await sleep(60);
+    assert.strictEqual(r.phase, 'over'); assert.strictEqual(r.g.loserId, 'p0'); assert.ok(r.players[1].out);
+  });
+  await t('final duel: no forfeit while both players can still win', () => {
+    const r = duel([['9H', '2S'], ['5H', '8S']]);
+    th._t.finishTrick(r, r.players[0]);
+    assert.strictEqual(r.g.stage, 'turn'); assert.strictEqual(r.phase, 'playing');
+  });
   console.log('Bluff'); const bl = games.get('bluff');
   await t('deals all cards; 2 decks auto at 6+ players', () => {
     const a = mkRoom('bluff', 4); bl.start(a); assert.strictEqual(allCards(a).length, 52);
