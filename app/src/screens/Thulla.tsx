@@ -23,6 +23,25 @@ function Fx({ geo, g }: { geo: Geo; g: any }) {
   return <>{layer}</>;
 }
 
+/* A lost final duel: the player who can't win any more throws their cards face-up onto the table */
+function Forfeit({ geo, g }: { geo: Geo; g: any }) {
+  const f = g.forfeit;
+  const items = React.useMemo(() => {
+    if (!f) return [];
+    const i = geo.idx(f.pid), n = f.cards.length;
+    return f.cards.map((id: string, k: number) => {
+      const a = (k / Math.max(1, n)) * Math.PI * 2 + Math.random() * 0.8, r = geo.u * (3 + Math.random() * 5);
+      return { id, from: geo.seat(i), to: { x: geo.cx + Math.cos(a) * r, y: geo.cy + Math.sin(a) * r * 0.7 }, rot: Math.round(Math.random() * 70 - 35), delay: k * 170 };
+    });
+  }, [f?.pid]);
+  React.useEffect(() => {
+    if (!f) return;
+    playSfx('slam'); Vibration.vibrate([0, 60, 40, 60]);
+  }, [f?.pid]);
+  if (!f) return null;
+  return <>{items.map((c: any) => <Fly key={c.id} from={c.from} to={c.to} w={geo.cw} id={c.id} back={false} duration={420} delay={c.delay} rot={c.rot} spin={(c.rot < 0 ? -1 : 1) * 140} arc={geo.u * 3} />)}</>;
+}
+
 /* Bhabhi Thulla: survival. Tracker of who still holds cards, the lead suit in the middle, the cards played on the rim. */
 export default function Thulla({ room }: { room: RoomState }) {
   const g = room.g, me = room.you.id, P = room.players;
@@ -62,7 +81,7 @@ export default function Thulla({ room }: { room: RoomState }) {
               const sd = seat(p.id), play = g.plays.find((q: any) => q.pid === p.id);
               return (
                 <React.Fragment key={p.id}>
-                  <PlayerStatus geo={geo} i={i} name={p.name} count={sd?.count} me={p.id === me} off={!p.connected} out={sd?.out}
+                  <PlayerStatus geo={geo} i={i} name={p.name} count={g.forfeit && g.forfeit.pid === p.id ? 0 : sd?.count} me={p.id === me} off={!p.connected} out={sd?.out}
                     active={g.turn === p.id || g.pick?.pid === p.id || g.consent?.targetId === p.id}
                     timerMs={g.timer && g.timer.pid === p.id ? g.timer.ms : null} />
                   {play && play.card === thullaCard && <SlamFly key={play.card} from={geo.seat(i)} to={geo.slot(i)} w={geo.cw} id={play.card} onLand={() => { shaker.shake(); playSfx('slam'); Vibration.vibrate([0, 70, 45, 35]); }} />}
@@ -72,6 +91,7 @@ export default function Thulla({ room }: { room: RoomState }) {
             })}
             <DealFx geo={geo} run={fresh} />
             <Fx geo={geo} g={g} />
+            <Forfeit geo={geo} g={g} />
           </>
         )}
       </GameTable>
@@ -106,8 +126,8 @@ export default function Thulla({ room }: { room: RoomState }) {
       {room.you.spectator ? <VisibilityTag kind="public" text="You’re spectating — no cards are shown" /> : (
         <>
         <VisibilityTag kind="private" text="Your hand · only you" />
-        <CardHand cards={g.you.hand} legal={myTurn ? g.you.legal : undefined} animateIn={fresh} onTap={c => (myTurn ? act('play', { card: c }) : invalid())} onInvalid={invalid} />
-        {g.you.hand.length === 0 && <AppText variant="title" tone="gold" style={st.hint}>You are out — safe!</AppText>}
+        <CardHand cards={g.forfeit && g.forfeit.pid === me ? [] : g.you.hand} legal={myTurn ? g.you.legal : undefined} animateIn={fresh} onTap={c => (myTurn ? act('play', { card: c }) : invalid())} onInvalid={invalid} />
+        {g.you.hand.length === 0 && !g.forfeit && <AppText variant="title" tone="gold" style={st.hint}>You are out — safe!</AppText>}
         </>
       )}
     </Animated.View>

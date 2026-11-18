@@ -13,6 +13,7 @@ const crypto = require('../crypto');
 const { later, setEvent, num } = require('../net');
 const { rank, suit, sortHand, shuffle, newDeck, label, SYM } = require('../cards');
 const bots = require('../bots');
+const { solve } = require('../duel');
 
 const cfg = {
   SETTLE_MS: num(process.env.SETTLE_MS, 1800),
@@ -20,6 +21,7 @@ const cfg = {
   CONSENT_MS: num(process.env.CONSENT_MS, 15000),
   TURN_MS: num(process.env.TURN_MS, 60000),
   BOT_MS: Math.max(1, num(process.env.BOT_MS, 4000)),
+  FORFEIT_MS: num(process.env.SETTLE_MS, 3400),   // the throw-in-your-cards finish of a lost final duel
   REQUEST_MAX_CARDS: 5,
 };
 
@@ -49,7 +51,7 @@ function freshState(room) {
   room.g = {
     stage: 'turn', turn: null, trick: null, trickNo: 0, discarded: 0, loserId: null, seq: 0, event: null,
     outCounter: 0, consent: null, pick: null, settle: null, lastTrick: null, fxSeq: 0, duelSeen: false, turnUntil: 0,
-    seen: [], voids: {},                 // public knowledge for computer seats: every card played, and who has shown a void
+    seen: [], voids: {}, forfeit: null,                 // public knowledge for computer seats: every card played, and who has shown a void
   };
   room.players.forEach(p => { p.hand = []; p.out = false; p.place = 0; p.reveal = null; p.requestedThisTurn = false; });
 }
@@ -173,11 +175,33 @@ function afterDiscard(room, winner) {
   if (live.length === 2) {
     const empty = live.filter(p => p.hand.length === 0);
     if (empty.length === 1 && empty[0] === winner) {
+      if (checkForfeit(room, winner, live.find(p => p !== winner), true)) return;
       return startPick(room, winner, live.find(p => p !== winner));
     }
   }
   const leader = winner.hand.length > 0 ? winner : nextActiveAfter(room, winner);
   finishTrick(room, leader);
+}
+
+/* A final duel one player can no longer win (the other can force the loss whatever they play; blind picks are
+   assumed to go the doomed player's way): they throw in their cards and are the Bhabhi. */
+function checkForfeit(room, lead, other, pick) {
+  if (room.noForfeit || !lead || !other) return false;
+  if (lead.hand.length + other.hand.length > 10 || (!pick && (!lead.hand.length || !other.hand.length))) return false;
+  const r = solve([lead.hand, other.hand], 0, pick);
+  if (r.doomed === null) return false;
+  const g = room.g, loser = r.doomed === 0 ? lead : other;
+  const text = `${loser.name} can’t win any more — throws in their cards!`;
+  g.stage = 'settle'; g.turn = null; g.consent = null; g.pick = null;
+  g.settle = { kind: 'forfeit', toId: null, bestPid: null, loserId: loser.id, text };
+  g.forfeit = { pid: loser.id, cards: sortHand(loser.hand.slice()) };
+  setEvent(room, 'forfeit', text);
+  later(room, cfg.FORFEIT_MS, () => {
+    g.settle = null;
+    room.players.forEach(q => { if (q !== loser) markOut(room, q); });     // the other player is safe
+    endGame(room, loser);
+  });
+  return true;
 }
 
 function startPick(room, picker, other) {
@@ -218,6 +242,7 @@ function finishTrick(room, leader) {
   markOuts(room);
   const active = room.players.filter(p => p.hand.length > 0);
   if (active.length <= 1 || !leader || leader.hand.length === 0) return endGame(room, active[0] || null);
+  if (nonOut(room).length === 2 && checkForfeit(room, leader, room.players.find(p => !p.out && p !== leader), false)) return;
   if (!g.duelSeen && nonOut(room).length === 2) {
     g.duelSeen = true;
     setEvent(room, 'duel', '⚔ Final duel — two players left!');
@@ -359,6 +384,7 @@ function view(room, p) {
     leadSuit: playing && t ? t.leadSuit : null, firstTrick: playing && t ? t.first : false,
     plays: playing && t ? t.plays : [], loserId: g.loserId,
     settle: playing ? g.settle : null,
+    forfeit: playing && g.settle && g.settle.kind === 'forfeit' ? g.forfeit : null,
     consent: consent ? { pid: consent.pid, targetId: consent.targetId, ms: Math.max(0, consent.until - Date.now()) } : null,
     pick: pick ? { pid: pick.pid, fromId: pick.fromId, n: pick.perm.length } : null,
     timer: playing && (g.stage === 'turn' || g.stage === 'pick') && g.turn ? { pid: g.turn, ms: Math.max(0, g.turnUntil - Date.now()) } : null,
@@ -382,5 +408,5 @@ module.exports = {
   settings: [{ key: 'requestMode', label: 'Hand requests', options: [
     { value: 'elimination', label: 'Take cards' }, { value: 'reveal', label: 'Peek only' }, { value: 'off', label: 'Off' } ] }],
   start, action, view, onPresence, reset, cfg,
-  _t: { freshState, newTrick, playCard, legalCards, doRequest, doRespond, doPick, canRequest, label, SYM },
+  _t: { checkForfeit, finishTrick, freshState, newTrick, playCard, legalCards, doRequest, doRespond, doPick, canRequest, label, SYM },
 };
