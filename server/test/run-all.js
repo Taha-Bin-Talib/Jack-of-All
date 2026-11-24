@@ -102,7 +102,7 @@ async function rules() {
     const b = mkRoom('bluff', 6); bl.start(b); assert.strictEqual(allCards(b).length, 104);
     clearTimeout(a.timer); clearTimeout(b.timer);
   });
-  await t('bluff caught: liar takes pile and opens next round', async () => {
+  await t('bluff caught: liar takes the pile, the caller opens next round', async () => {
     const r = mkRoom('bluff', 3); bl.start(r); clearTimeout(r.timer);
     const p = r.players.find(x => x.id === r.g.turn);
     p.hand.push('2H', '9S'); const before = p.hand.length;
@@ -113,7 +113,7 @@ async function rules() {
     assert.strictEqual(r.g.reveal.truthful, false);
     await sleep(30);
     assert.strictEqual(p.hand.length, before);              // played 1, took 1 back
-    assert.strictEqual(r.g.stage, 'open'); assert.strictEqual(r.g.turn, p.id);
+    assert.strictEqual(r.g.stage, 'open'); assert.strictEqual(r.g.turn, q.id);
     clearTimeout(r.timer);
   });
   await t('honest play: caller picks up the pile', async () => {
