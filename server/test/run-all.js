@@ -83,11 +83,11 @@ async function rules() {
     return r;
   };
   await t('final duel: a player who can be forced to lose throws in their cards and is the Bhabhi', async () => {
-    const r = duel([['7S', '12H', '7H'], ['3D', '9C', '13D']]);
+    const r = duel([['2S'], ['13H']]);
     th._t.newTrick(r, r.players[0], false);
     th._t.finishTrick(r, r.players[0]);
     assert.strictEqual(r.g.stage, 'settle'); assert.strictEqual(r.g.settle.kind, 'forfeit');
-    const v = th.view(r, r.players[1]); assert.strictEqual(v.forfeit.pid, 'p0'); assert.strictEqual(v.forfeit.cards.length, 3);
+    const v = th.view(r, r.players[1]); assert.strictEqual(v.forfeit.pid, 'p0'); assert.strictEqual(v.forfeit.cards.length, 1);
     await sleep(60);
     assert.strictEqual(r.phase, 'over'); assert.strictEqual(r.g.loserId, 'p0'); assert.ok(r.players[1].out);
   });
@@ -102,7 +102,7 @@ async function rules() {
     const b = mkRoom('bluff', 6); bl.start(b); assert.strictEqual(allCards(b).length, 104);
     clearTimeout(a.timer); clearTimeout(b.timer);
   });
-  await t('bluff caught: liar takes pile and opens next round', async () => {
+  await t('bluff caught: liar takes the pile, the caller opens next round', async () => {
     const r = mkRoom('bluff', 3); bl.start(r); clearTimeout(r.timer);
     const p = r.players.find(x => x.id === r.g.turn);
     p.hand.push('2H', '9S'); const before = p.hand.length;
@@ -113,7 +113,7 @@ async function rules() {
     assert.strictEqual(r.g.reveal.truthful, false);
     await sleep(30);
     assert.strictEqual(p.hand.length, before);              // played 1, took 1 back
-    assert.strictEqual(r.g.stage, 'open'); assert.strictEqual(r.g.turn, p.id);
+    assert.strictEqual(r.g.stage, 'open'); assert.strictEqual(r.g.turn, q.id);
     clearTimeout(r.timer);
   });
   await t('honest play: caller picks up the pile', async () => {

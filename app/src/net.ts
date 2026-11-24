@@ -97,6 +97,7 @@ function onMsg(m: any) {
 /* ---------- offline "Play now": the same game engine runs inside the app, with 3 bots ---------- */
 let L: { rooms: any; games: any; ws: any; room: any } | null = null;
 const BOT_NAMES = ['Ali', 'Sara', 'Zain', 'Maya', 'Omar'];   // ordinary names; the table never labels them as computer players
+const reseat = (room: any) => { const a = room.players; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } };   // new random seating every game
 export function playOffline(game: string, name: string) {
   stopLocal();
   const rooms = require('./engine/rooms'), games = require('./engine/games'), net = require('./engine/net');
@@ -110,6 +111,7 @@ export function playOffline(game: string, name: string) {
   const taken = name.trim().toLowerCase();
   BOT_NAMES.filter(n => n.toLowerCase() !== taken).slice(0, 3).forEach((n, i) => room.players.push({ id: 'bot' + i, token: 'bot' + i, name: n, ws: null, connected: false, hand: [], out: false, place: 0 }));
   L = { rooms, games, ws, room };
+  reseat(room);
   room.engine.start(room);
   net.broadcast(room);
 }
@@ -125,7 +127,7 @@ function localAct(m: any) {
   if (m.t === 'rematch') {            // straight into a new game with the same bots
     if (room.phase !== 'over') return;
     room.engine.reset(room); room.phase = 'lobby'; room.g = null;
-    room.engine.start(room); require('./engine/net').broadcast(room);
+    reseat(room); room.engine.start(room); require('./engine/net').broadcast(room);
     return;
   }
   rooms.handle(ws, m);
