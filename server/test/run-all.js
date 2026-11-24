@@ -83,11 +83,11 @@ async function rules() {
     return r;
   };
   await t('final duel: a player who can be forced to lose throws in their cards and is the Bhabhi', async () => {
-    const r = duel([['7S', '12H', '7H'], ['3D', '9C', '13D']]);
+    const r = duel([['2S'], ['13H']]);
     th._t.newTrick(r, r.players[0], false);
     th._t.finishTrick(r, r.players[0]);
     assert.strictEqual(r.g.stage, 'settle'); assert.strictEqual(r.g.settle.kind, 'forfeit');
-    const v = th.view(r, r.players[1]); assert.strictEqual(v.forfeit.pid, 'p0'); assert.strictEqual(v.forfeit.cards.length, 3);
+    const v = th.view(r, r.players[1]); assert.strictEqual(v.forfeit.pid, 'p0'); assert.strictEqual(v.forfeit.cards.length, 1);
     await sleep(60);
     assert.strictEqual(r.phase, 'over'); assert.strictEqual(r.g.loserId, 'p0'); assert.ok(r.players[1].out);
   });
